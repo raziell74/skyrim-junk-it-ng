@@ -63,3 +63,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## License
 
 - This mod is licensed under the [MIT License](https://opensource.org/licenses/MIT)
+
+## Source Code
+
+The Source code for the SKSE plugin can be found here: [JunkIt - SKSE](https://github.com/raziell74/skyrim-junk-it-ng-skse)
