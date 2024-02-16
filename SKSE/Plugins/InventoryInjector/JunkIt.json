@@ -3,11 +3,10 @@
 	"rules": [
 		{
 			"match": {
-				"isEquipped": false,
-				"flags": {
-					"noneOf": [ "isFavorite" ]
-				},
-				"keywords": [ "IsJunk" ]
+				"keywords": {
+          			"anyOf": [ "IsJunk" ]
+        		},
+        		"isEquipped": false
 			},
 			"assign": {
 				"iconSource": "JunkIt/icons.swf",

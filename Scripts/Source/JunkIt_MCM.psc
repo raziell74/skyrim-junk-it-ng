@@ -8,25 +8,90 @@ Actor Property PlayerRef Auto
 Keyword Property IsJunkKYWD Auto
 FormList Property JunkList Auto
 
+GlobalVariable Property ConfirmTransfer Auto
+GlobalVariable Property ConfirmSell Auto
+
+GlobalVariable Property TransferPriority Auto
+GlobalVariable Property SellPriority Auto
+
+Message Property TransferConfirmationMsg Auto
+Message Property RetrievalConfirmationMsg Auto
+Message Property SellConfirmationMsg Auto
+
 ; Script Variables ---------------------------------------------------------------------------------
-Int UserJunkKey = -1
-Int TransferJunkKey = -1
+Int UserJunkKey = 50
+Int TransferJunkKey = 49
 String ActiveMenu = ""
 
-String INVENTORY_ITEM_LIST = "_root.Menu_mc.inventoryLists.itemList"
-String CONTAINER_INVENTORY_LISTS = "_root.Menu_mc.InventoryLists_mc"
-String CONTAINER_ITEM_LIST = "_root.Menu_mc.InventoryLists_mc.itemList"
-String ITEM_MENU_ITEM_LIST = "_root.ItemMenu.inventoryLists"
+String ITEM_LIST_ROOT = "_root.Menu_mc.inventoryLists.itemList"
 
-; Mod initilization. Sets hotkey from settings. This only runs once.
+;--- Private Variables ----------------------------------------------------
+Bool migrated = False
+String plugin = "JunkIt.esp"
+
+; --- MCM Helper Functions ---------------------------------------------------
+
+; Returns version of this script.
+Int Function GetVersion()
+    return 1 ;MCM Helper
+EndFunction
+
+Event OnVersionUpdate(int aVersion)
+	parent.OnVersionUpdate(aVersion)
+    MigrateToMCMHelper()
+    VerboseMessage("OnVersionUpdate: MCM Updated")
+    RefreshMenu()
+EndEvent
+
+; Event called periodically if the active magic effect/alias/form is registered for update events. This event will not be sent if the game is in menu mode. 
+Event OnUpdate()
+    parent.OnUpdate()
+    If !migrated
+        MigrateToMCMHelper()
+        migrated = True
+        VerboseMessage("OnUpdate: Settings imported!")
+    EndIf
+EndEvent
+
+; Called when game is reloaded.
+Event OnGameReload()
+    parent.OnGameReload()
+    If !migrated
+        MigrateToMCMHelper()
+        migrated = True
+        VerboseMessage("OnGameReload: Settings imported!")
+    EndIf
+    If GetModSettingBool("bLoadSettingsonReload:Maintenance")
+        LoadSettings()
+        VerboseMessage("OnGameReload: Settings autoloaded!")
+    EndIf
+
+    RegisterForMenu("InventoryMenu")
+    RegisterForMenu("ContainerMenu")
+    RegisterForMenu("BarterMenu")
+EndEvent
+
+; Called when a new page is selected, including the initial empty page.
+Event OnPageSelect(String a_page)
+    parent.OnPageSelect(a_page)
+    RefreshMenu()
+EndEvent
+
+; Called when this config menu is opened.
+Event OnConfigOpen()
+    parent.OnConfigOpen()
+    If !migrated
+        MigrateToMCMHelper()
+        migrated = True
+        VerboseMessage("OnConfigOpen: Settings imported!")
+    EndIf
+EndEvent
+
+; Called when this config menu is initialized.
 Event OnConfigInit()
-    If GetModSettingInt("iJunkKey:General") != -1
-        UserJunkKey = GetModSettingInt("iJunkKey:General")
-    EndIf
-
-    If GetModSettingInt("iTransferJunkKey:General") != -1
-        TransferJunkKey = GetModSettingInt("iTransferJunkKey:General")
-    EndIf
+    parent.OnConfigInit()
+    migrated = True
+    LoadSettings()
 
     RegisterForMenu("InventoryMenu")
     RegisterForMenu("ContainerMenu")
@@ -35,20 +100,105 @@ EndEvent
 
 ; Refreshes hotkey when toggled by the player.
 Event OnSettingChange(String a_ID)
-    If (a_ID == "iJunkKey:General")
-        UserJunkKey = GetModSettingInt("iJunkKey:General")
+    ; Hotkey Settings
+    If a_ID == "iJunkKey:Hotkey"
+        UserJunkKey = GetModSettingInt(a_ID)
         RefreshMenu()
-    EndIf
-
-    If (a_ID == "iTransferJunkKey:General")
-        TransferJunkKey = GetModSettingInt("iTransferJunkKey:General")
+    ElseIf a_ID == "iTransferJunkKey:Hotkey"
+        TransferJunkKey = GetModSettingInt(a_ID)
         RefreshMenu()
+    
+    ; Confirmation Settings
+    ElseIf a_ID == "bConfirmTransfer:Confirmation"
+        ConfirmTransfer.SetValue(GetModSettingBool(a_ID) as Float)
+    ElseIf a_ID == "bConfirmSell:Confirmation"
+        ConfirmSell.SetValue(GetModSettingBool(a_ID) as Float)
+    
+    ; Bulk Action Priority Settings
+    ElseIf a_ID == "iTransferPriority:Priority"
+        TransferPriority.SetValue(GetModSettingInt(a_ID) as Float)
+    ElseIf a_ID == "iSellPriority:Priority"
+        SellPriority.SetValue(GetModSettingInt(a_ID) as Float)
     EndIf
-
-    RegisterForMenu("InventoryMenu")
-    RegisterForMenu("ContainerMenu")
-    RegisterForMenu("BarterMenu")
 EndEvent
+
+Function Default()
+    ; Hotkey Settings
+    SetModSettingInt("iJunkKey:Hotkey", 50)
+    SetModSettingInt("iTransferJunkKey:Hotkey", 49)
+
+    ; Confirmation Settings
+    SetModSettingBool("bConfirmTransfer:Confirmation", True)
+    SetModSettingBool("bConfirmSell:Confirmation", True)
+    
+    ; Bulk Action Priority Settings
+    SetModSettingInt("iTransferPriority:Priority", 0)
+    SetModSettingInt("iSellPriority:Priority", 4)
+
+    ; Maintenance Settings
+    SetModSettingBool("bEnabled:Maintenance", True)
+    SetModSettingInt("iLoadingDelay:Maintenance", 0)
+    SetModSettingBool("bLoadSettingsonReload:Maintenance", False)
+    SetModSettingBool("bVerbose:Maintenance", False)
+    VerboseMessage("Settings reset!")
+    Load()
+EndFunction
+
+Function Load()
+    ; Hotkey Settings
+    UserJunkKey = GetModSettingInt("iJunkKey:Hotkey")
+    TransferJunkKey = GetModSettingInt("iTransferJunkKey:Hotkey")
+
+    ; Confirmation Settings
+    ConfirmTransfer.SetValue(GetModSettingBool("bConfirmTransfer:Confirmation") as Float)
+    ConfirmSell.SetValue(GetModSettingBool("bConfirmSell:Confirmation") as Float)
+    
+    ; Bulk Action Priority Settings
+    TransferPriority.SetValue(GetModSettingInt("iTransferPriority:Priority") as Float)
+    SellPriority.SetValue(GetModSettingInt("iSellPriority:Priority") as Float)
+
+    VerboseMessage("Settings applied!")
+EndFunction
+
+Function LoadSettings()
+    If GetModSettingBool("bEnabled:Maintenance") == false
+        return
+    EndIf
+    Utility.Wait(GetModSettingInt("iLoadingDelay:Maintenance"))
+    VerboseMessage("Settings autoloaded!")
+    Load()
+EndFunction
+
+; Migrating to MCM Helper
+Function MigrateToMCMHelper()
+    ; Hotkey Settings
+    SetModSettingInt("iJunkKey:Hotkey", UserJunkKey)
+    SetModSettingInt("iTransferJunkKey:Hotkey", TransferJunkKey)
+
+    ; Confirmation Settings
+    SetModSettingBool("bConfirmTransfer:Confirmation", ConfirmTransfer.GetValue() as Bool)
+    SetModSettingBool("bConfirmSell:Confirmation", ConfirmSell.GetValue() as Bool)
+    
+    ; Bulk Action Priority Settings
+    SetModSettingInt("iTransferPriority:Priority", TransferPriority.GetValue() as Int)
+    SetModSettingInt("iSellPriority:Priority", SellPriority.GetValue() as Int)
+EndFunction
+
+Function VerboseMessage(String m)
+    Debug.Trace("[JunkIt] " + m)
+    If GetModSettingBool("bVerbose:Maintenance")
+        Debug.Notification("[JunkIt] " + m)
+    EndIf
+EndFunction
+
+; JunkIt.dll SKSE Native Functions ---------------------------------------------------------------------------------
+
+Function RefreshUIIcons() global native
+; Function TransferJunk() global native
+; Function RetrieveJunk() global native
+; Function SellJunk() global native
+
+; --- JunkIt Logic Functions ---------------------------------------------------
 
 Event OnInit()
 	RegisterForMenu("InventoryMenu")
@@ -65,7 +215,6 @@ endEvent
 
 ; When the player opens the Inventory Menu, we start listening for the hotkey.
 Event OnMenuOpen(String MenuName)
-    MiscUtil.PrintConsole("MarkAsJunk - Menu Name: " + MenuName)
     If MenuName == "InventoryMenu" || MenuName == "ContainerMenu" || MenuName == "BarterMenu"
         If UserJunkKey != -1
             RegisterForKey(UserJunkKey)
@@ -87,107 +236,10 @@ Event OnMenuClose(String MenuName)
     EndIf
 EndEvent
 
-Function MarkAsJunk()
-    String ItemListRoot = INVENTORY_ITEM_LIST
-    
-    If ActiveMenu == "ContainerMenu"
-        ItemListRoot = CONTAINER_ITEM_LIST
-        Int test = UI.GetInt(ActiveMenu, CONTAINER_ITEM_LIST + ".selectedEntry.formId")
-        Debug.MessageBox("ContainerMenu: Selected FormId: " + test)
-
-        ; ItemListRoot = ITEM_MENU_ITEM_LIST
-        Int test2 = UI.GetInt(ActiveMenu, ITEM_MENU_ITEM_LIST + ".selectedEntry.formId")
-        Debug.MessageBox("ItemMenu: Selected FormId: " + test2)
-    EndIf
-
-    Int selectedIndex = UI.GetInt(ActiveMenu, ItemListRoot + ".selectedIndex")
-    Int selectedFormId = UI.GetInt(ActiveMenu, ItemListRoot + ".selectedEntry.formId")
-    Form selected_item = Game.GetFormEx(selectedFormId)
-    
-    If !selected_item.HasKeyword(IsJunkKYWD)
-        AddKeywordToForm(selected_item, IsJunkKYWD)
-        JunkList.AddForm(selected_item)
-
-        ; Live Update to the Entries Icon
-        ;UI.SetString(ActiveMenu, ItemListRoot + ".selectedEntry.iconSource", "MarkAsJunk/icons.swf")
-        ;UI.SetString(ActiveMenu, ItemListRoot + ".selectedEntry.iconLabel", "trash")
-        ;UI.SetInt(ActiveMenu, ItemListRoot + ".selectedEntry.iconColor", 7434609)
-        ;UI.Invoke(ActiveMenu, ItemListRoot + "commitUpdate")
-
-        ; Unselecting and reselecting the item to refresh the icon
-        ;int[] params = new int[2]
-        ;params[0] = selectedIndex - 1
-        ;params[1] = 0
-        ;If selectedIndex == 0
-        ;    params[0] = selectedIndex + 1
-        ;EndIf
-        ;UI.InvokeIntA(ActiveMenu, ItemListRoot + ".doSetSelectedIndex", params)
-        ;Utility.WaitMenuMode(0.1)
-        ;params[0] = selectedIndex
-        ;UI.InvokeIntA(ActiveMenu, ItemListRoot + ".doSetSelectedIndex", params)
-        Debug.MessageBox("This item is now junk!")
-    ElseIf selected_item.HasKeyword(IsJunkKYWD)
-        RemoveKeywordOnForm(selected_item, IsJunkKYWD)
-        JunkList.RemoveAddedForm(selected_item)
-
-        ; Live Update to the Entries Icon
-        ;UI.SetString(ActiveMenu, ItemListRoot + ".selectedEntry.iconSource", "")
-        ;UI.SetString(ActiveMenu, ItemListRoot + ".selectedEntry.iconLabel", "")
-        ;UI.SetInt(ActiveMenu, ItemListRoot + ".selectedEntry.iconColor", -1)
-        ;UI.Invoke(ActiveMenu, ItemListRoot + "commitUpdate")
-
-        ; Unselecting and reselecting the item to refresh the icon
-        ;int[] params = new int[2]
-        ;params[0] = selectedIndex - 1
-        ;params[1] = 0
-        ;If selectedIndex == 0
-        ;    params[0] = selectedIndex + 1
-        ;EndIf
-        ;UI.InvokeIntA(ActiveMenu, ItemListRoot + ".doSetSelectedIndex", params)
-        ;Utility.WaitMenuMode(0.1)
-        ;params[0] = selectedIndex
-        ;UI.InvokeIntA(ActiveMenu, ItemListRoot + ".doSetSelectedIndex", params)
-        Debug.MessageBox("This item is no longer junk!")
-    EndIf
-EndFunction
-
-Function TransferJunk()
-    If JunkList.GetSize() <= 0
-        Return
-    EndIf
-    ObjectReference transferContainer = GetMenuContainer()
-    Int activeSegment = UI.GetInt(ActiveMenu, CONTAINER_INVENTORY_LISTS + ".CategoriesList.dividerIndex")
-    Bool isViewingContainer = activeSegment == 0
-    
-    ; If isViewingContainer ; @TODO Fix segment detection
-    If Input.IsKeyPressed(42) ; Left Shift
-        If transferContainer.GetItemCount(JunkList) <= 0
-            Debug.MessageBox("No Junk to retrieve!")
-            Return
-        EndIf
-        transferContainer.RemoveItem(JunkList, 900, true, PlayerREF)
-        Debug.MessageBox("Retrieved Junk!")
-    Else
-        If PlayerREF.GetItemCount(JunkList) <= 0
-            Debug.MessageBox("No Junk to transfer!")
-            Return
-        EndIf
-        PlayerREF.RemoveItem(JunkList, 900, true, transferContainer)
-        Debug.MessageBox("Transferred Junk!")
-    EndIf
-EndFunction
-
-Function SellJunk()
-    If JunkList.GetSize() <= 0
-        Return
-    EndIf
-    ; GetMenuContainer() ; Not sure if GetMenuContainer() works in BarterMenu
-EndFunction
-
 ; When the player presses the hotkey, while in the Inventory Menu, the item they're highlighting is marked as junk.
 Event OnKeyUp(Int KeyCode, Float HoldTime)
     If ActiveMenu == "InventoryMenu" || ActiveMenu == "ContainerMenu" || ActiveMenu == "BarterMenu"
-        If UI.IsTextInputEnabled()
+        If UI.IsTextInputEnabled() ; avoid marking/bulk actions during text input
             Return
         EndIf
 
@@ -195,7 +247,7 @@ Event OnKeyUp(Int KeyCode, Float HoldTime)
             MarkAsJunk()
         EndIf
 
-        If KeyCode == TransferJunkKey 
+        If KeyCode == TransferJunkKey
             If ActiveMenu == "ContainerMenu"
                 TransferJunk()
             ElseIf ActiveMenu == "BarterMenu"
@@ -204,3 +256,109 @@ Event OnKeyUp(Int KeyCode, Float HoldTime)
         EndIf
     EndIf
 EndEvent
+
+; Toggles the junk status of the selected item in an Item Menu.
+Function MarkAsJunk()
+    ; Get the selected item in the Item Menu
+    Int selectedFormId = UI.GetInt(ActiveMenu, ITEM_LIST_ROOT + ".selectedEntry.formId")
+    Form selected_item = Game.GetFormEx(selectedFormId)
+
+    If !selected_item.HasKeyword(IsJunkKYWD)
+        ; Mark as Junk
+        AddKeywordToForm(selected_item, IsJunkKYWD)
+        
+        ; Update Junk FormList
+        If !JunkList.HasForm(selected_item)
+            JunkList.AddForm(selected_item)
+        EndIf
+
+        MiscUtil.PrintConsole("JunkIt - FormId: " + selectedFormId + " has been marked as junk")
+        ; Debug.MessageBox("This item is now junk!")
+    ElseIf selected_item.HasKeyword(IsJunkKYWD)
+        ; Unmark as Junk
+        RemoveKeywordOnForm(selected_item, IsJunkKYWD)
+        
+        ; Update Junk FormList
+        If JunkList.HasForm(selected_item)
+            JunkList.RemoveAddedForm(selected_item)
+        EndIf
+
+        MiscUtil.PrintConsole("JunkIt - FormId: " + selectedFormId + " is no longer marked as junk")
+        ; Debug.MessageBox("This item is no longer junk!")
+    EndIf
+
+    ; SKSE Native Function to refresh the UI Icons on the fly
+    RefreshUIIcons()
+EndFunction
+
+; Bulk Transfer of Junk Items
+; @TODO prevent transfer from going over container weight capacity, and figure out how to get the weight capacity
+; @TODO move transfers/retreivals to SKSE native functions
+Function TransferJunk()
+    If JunkList.GetSize() <= 0
+        Return
+    EndIf
+
+    Bool canRetrieve = FALSE
+    Bool canTransfer = FALSE
+
+    ObjectReference transferContainer = GetMenuContainer()
+    Bool isViewingContainer = UI.GetBool("ContainerMenu", "_root.Menu_mc.isViewingContainer")
+
+    if isViewingContainer == TRUE
+        ; Retrieve from container
+        MiscUtil.PrintConsole("JunkIt - Viewing Container Inventory")
+        Debug.MessageBox("Viewing Container!")
+        if ConfirmTransfer.GetValue() >= 1
+            Int iConfChoice = RetrievalConfirmationMsg.Show()
+            If(iConfChoice == 0) ;Yes
+                canRetrieve = TRUE
+            ElseIf(iConfChoice == 1) ;No
+                Return
+            EndIf
+        Else
+            canRetrieve = TRUE
+        EndIf
+    Else
+        ; Transfer to container
+        MiscUtil.PrintConsole("JunkIt - Viewing Player Inventory")
+        Debug.MessageBox("Viewing Player Inventory!")
+        if ConfirmTransfer.GetValue() >= 1
+            Int iConfChoice = TransferConfirmationMsg.Show()
+            If(iConfChoice == 0) ;Yes
+                canTransfer = TRUE
+            ElseIf(iConfChoice == 1) ;No
+                Return
+            EndIf
+        Else
+            canTransfer = TRUE
+        EndIf
+    EndIf
+
+    If canRetrieve == TRUE
+        If transferContainer.GetItemCount(JunkList) <= 0
+            Debug.MessageBox("No Junk to retrieve!")
+            Return
+        EndIf
+        transferContainer.RemoveItem(JunkList, 100, true, PlayerREF)
+        Debug.MessageBox("Retrieved Junk!")
+    EndIf
+
+    If canTransfer == TRUE
+        If PlayerREF.GetItemCount(JunkList) <= 0
+            Debug.MessageBox("No Junk to transfer!")
+            Return
+        EndIf
+        PlayerREF.RemoveItem(JunkList, 100, true, transferContainer)
+        Debug.MessageBox("Transferred Junk!")
+    EndIf
+EndFunction
+
+; Bulk Sell junk items to a merchant
+; @TODO implement SKSE native function for bulk selling
+Function SellJunk()
+    If JunkList.GetSize() <= 0
+        Return
+    EndIf
+    ; @NOTE Bulk Selling is not implemented yet
+EndFunction

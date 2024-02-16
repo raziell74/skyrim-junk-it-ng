@@ -1,6 +1,6 @@
 {
     "modName": "JunkIt",
-    "displayName": "$JunkIt_Page_Title",
+    "displayName": "$JunkItMCM",
     "minMcmVersion": 9,
     "pluginRequirements": [
         "JunkIt.esp"
@@ -11,24 +11,174 @@
             "cursorFillMode": "topToBottom",
             "content": [
                 {
+                    "type": "header",
+                    "text": "$JunkIt_ConfirmationsHeader"
+                },
+                {
+                    "id": "bConfirmSell:Confirmation",
+                    "type": "toggle",
+                    "text": "$JunkIt_ConfirmSellToggle",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool"
+                    }
+                },
+                {
+                    "id": "bConfirmTransfer:Confirmation",
+                    "type": "toggle",
+                    "text": "$JunkIt_ConfirmTransferToggle",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool"
+                    }
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_PriorityHeader"
+                },
+                {
+                    "id": "iTransferPriority:Priority",
+                    "type": "enum",
+                    "text": "$JunkIt_TransferPriority",
+                    "help": "$JunkIt_TransferPriority_Help",
+                    "valueOptions": {
+                        "options": [
+                            "$JunkIt_WeightHighToLow_ENUM",
+                            "$JunkIt_WeightLowToHigh_ENUM",
+                            "$JunkIt_ValueHighToLow_ENUM",
+                            "$JunkIt_ValueLowToHigh_ENUM",
+                            "$JunkIt_ValueWeightHighToLow_ENUM",
+                            "$JunkIt_ValueWeightLowToHigh_ENUM"
+                        ],
+                        "sourceType": "ModSettingInt",
+                        "defaultValue": 0
+                    }
+                },
+                {
+                    "id": "iSellPriority:Priority",
+                    "type": "enum",
+                    "text": "$JunkIt_SellPriority",
+                    "help": "$JunkIt_SellPriority_Help",
+                    "valueOptions": {
+                        "options": [
+                            "$JunkIt_WeightHighToLow_ENUM",
+                            "$JunkIt_WeightLowToHigh_ENUM",
+                            "$JunkIt_ValueHighToLow_ENUM",
+                            "$JunkIt_ValueLowToHigh_ENUM",
+                            "$JunkIt_ValueWeightHighToLow_ENUM",
+                            "$JunkIt_ValueWeightLowToHigh_ENUM"
+                        ],
+                        "sourceType": "ModSettingInt",
+                        "defaultValue": 4
+                    }
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_HotkeyHeader",
+                    "position": 1
+                },
+                {
+                    "id": "iJunkKey:Hotkey",
                     "type": "keymap",
                     "text": "$JunkIt_Text_Hotkey",
                     "help": "$JunkIt_Help_Hotkey",
                     "ignoreConflicts": true,
                     "valueOptions": {
                         "sourceType": "ModSettingInt"
-                    },
-                    "id": "iJunkKey:General"
+                    }
                 },
                 {
+                    "id": "iTransferJunkKey:Hotkey",
                     "type": "keymap",
                     "text": "$JunkIt_Transfer_Hotkey",
                     "help": "$JunkIt_Transfer_Hotkey_Help",
                     "ignoreConflicts": true,
                     "valueOptions": {
                         "sourceType": "ModSettingInt"
+                    }
+                }
+            ]
+        },
+        {
+            "pageDisplayName": "$Maintenance_Page",
+            "cursorFillMode": "topToBottom",
+            "content": [
+                {
+                    "type": "header",
+                    "text": "$AutoloadSettings_Header"
+                },
+                {
+                    "id": "bEnabled:Maintenance",
+                    "type": "toggle",
+                    "text": "$Enabled",
+                    "help": "$EnabledMaintenance_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": true
+                    }
+                },
+                {
+                    "id": "iLoadingDelay:Maintenance",
+                    "type": "slider",
+                    "text": "$LoadingDelay",
+                    "help": "$LoadingDelayMaintenance_Help",
+                    "valueOptions": {
+                        "min": 0,
+                        "max": 600,
+                        "step": 1,
+                        "defaultValue": 0,
+                        "sourceType": "ModSettingInt",
+                        "formatString": "{0}"
+                    }
+                },
+                {
+                    "id": "sLoadSettings:Maintenance",
+                    "type": "text",
+                    "text": "$LoadSettings",
+                    "help": "$LoadSettingsMaintenance_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": ""
                     },
-                    "id": "iTransferJunkKey:General"
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "Load"
+                    }
+                },
+                {
+                    "id": "sResetSettings:Maintenance",
+                    "type": "text",
+                    "text": "$ResetSettings",
+                    "help": "$ResetSettingsMaintenance_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": ""
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "Default"
+                    }
+                },
+                {
+                    "id": "bLoadSettingsonReload:Maintenance",
+                    "type": "toggle",
+                    "text": "$LoadSettingsonReload",
+                    "help": "$LoadSettingsonReloadMaintenance_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
+                },
+                {
+                    "id": "bVerbose:Maintenance",
+                    "type": "toggle",
+                    "text": "$Verbose",
+                    "help": "$VerboseMaintenance_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
                 }
             ]
         }
