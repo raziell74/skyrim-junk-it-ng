@@ -1,0 +1,36 @@
+{
+    "modName": "JunkIt",
+    "displayName": "$JunkIt_Page_Title",
+    "minMcmVersion": 9,
+    "pluginRequirements": [
+        "JunkIt.esp"
+    ],
+    "pages": [
+        {
+            "pageDisplayName": "$JunkIt_Page_Settings",
+            "cursorFillMode": "topToBottom",
+            "content": [
+                {
+                    "type": "keymap",
+                    "text": "$JunkIt_Text_Hotkey",
+                    "help": "$JunkIt_Help_Hotkey",
+                    "ignoreConflicts": true,
+                    "valueOptions": {
+                        "sourceType": "ModSettingInt"
+                    },
+                    "id": "iJunkKey:General"
+                },
+                {
+                    "type": "keymap",
+                    "text": "$JunkIt_Transfer_Hotkey",
+                    "help": "$JunkIt_Transfer_Hotkey_Help",
+                    "ignoreConflicts": true,
+                    "valueOptions": {
+                        "sourceType": "ModSettingInt"
+                    },
+                    "id": "iTransferJunkKey:General"
+                }
+            ]
+        }
+    ]
+}
