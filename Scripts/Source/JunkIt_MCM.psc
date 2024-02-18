@@ -233,46 +233,26 @@ Function VerboseMessage(String m)
     EndIf
 EndFunction
 
-; JunkIt.dll SKSE Native Functions ---------------------------------------------------------------------------------
+; --- JunkIt Native Functions ---------------------------------------------------------------------------------
 
 Function RefreshUIIcons() global native
 
-Function SellJunk() global native
-FormList Function GetSellFormList() global native
-
 Int Function GetContainerMode() global native
 FormList Function GetTransferFormList() global native
-FormList Function GetRetrievalFormList() global native
+FormList Function GetSellFormList() global native
 
-; --- JunkIt Logic Functions ---------------------------------------------------
-
-Event OnInit()
-	RegisterForMenu("InventoryMenu")
-    RegisterForMenu("ContainerMenu")
-    RegisterForMenu("BarterMenu")
-
-    If UserJunkKey != -1
-        RegisterForKey(UserJunkKey)
-    EndIf
-
-    If TransferJunkKey != -1
-        RegisterForKey(TransferJunkKey)
-    EndIf
-EndEvent
+; --- JunkIt Functionality ---------------------------------------------------
 
 ; When the player opens the Inventory Menu, we start listening for the hotkey.
 Event OnMenuOpen(String MenuName)
-    If MenuName == "InventoryMenu" || MenuName == "ContainerMenu" || MenuName == "BarterMenu"
-        ActiveMenu = MenuName
-    EndIf
+    ActiveMenu = MenuName
+    GotoState("")
 EndEvent
 
 ; When the player closes the Inventory Menu, we stop listening for the hotkey.
 Event OnMenuClose(String MenuName)
-    If MenuName == "InventoryMenu" || MenuName == "ContainerMenu" || MenuName == "BarterMenu"
-        ActiveMenu = ""
-    EndIf
-    GotoState("")
+    ActiveMenu = ""
+    GotoState("busy")
 EndEvent
 
 ; When the player presses the hotkey, while in the Inventory Menu, the item they're highlighting is marked as junk.
@@ -285,9 +265,9 @@ Event OnKeyUp(Int KeyCode, Float HoldTime)
 
         If KeyCode == TransferJunkKey
             If ActiveMenu == "ContainerMenu"
-                BulkTransfer()
+                TransferJunk()
             ElseIf ActiveMenu == "BarterMenu"
-                BulkSell()
+                SellJunk()
             EndIf
         EndIf
         GotoState("")
@@ -295,9 +275,8 @@ Event OnKeyUp(Int KeyCode, Float HoldTime)
 EndEvent
 
 State busy
-    ; Ignore key presses if already processing a command
+    ; Ignore key presses if already processing a command or not in a menu
     Event OnKeyUp(Int KeyCode, Float HoldTime)
-        MiscUtil.PrintConsole("JunkIt - Is Busy")
     EndEvent
 EndState
 
@@ -344,8 +323,8 @@ Function MarkAsJunk()
     EndIf
 EndFunction
 
-; Bulk Transfer of Junk Items
-Function BulkTransfer()
+; Transfer/Retrieve junk items
+Function TransferJunk()
     If JunkList.GetSize() <= 0
         Return
     EndIf
@@ -356,6 +335,15 @@ Function BulkTransfer()
     FormList TransferList = GetTransferFormList()
     Bool canRetrieve = FALSE
     Bool canTransfer = FALSE
+
+    Int containerMode = GetContainerMode()
+
+    ; disable if pickpocketing
+    If containerMode == 2
+        MiscUtil.PrintConsole("JunkIt - Junk Transfer disabled while pickpocketing")
+        Debug.Notification("JunkIt - Junk Transfer disabled while pickpocketing")
+        Return
+    EndIf
 
     if menuView == 0 ; VIEWING CONTAINER
         ; Retrieve from container
@@ -410,7 +398,7 @@ Function BulkTransfer()
     If canTransfer == TRUE
         Debug.Notification("JunkIt - Transferring Junk")
         ; Find out if we're trading with an NPC and account for their carry weight
-        If(GetContainerMode() == 3) ; NPC Mode
+        If(containerMode == 3) ; NPC Mode
             Actor transferActor = transferContainer as Actor
             Int maxWeight = transferActor.GetActorValue("CarryWeight") as Int
             Int currentWeight = transferActor.GetActorValue("InventoryWeight") as Int
@@ -474,8 +462,7 @@ Function BulkTransfer()
 EndFunction
 
 ; Bulk Sell junk items to a merchant
-; @TODO implement SKSE native function for bulk selling
-Function BulkSell()
+Function SellJunk()
     If JunkList.GetSize() <= 0
         Return
     EndIf

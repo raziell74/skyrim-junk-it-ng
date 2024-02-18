@@ -1,31 +1,24 @@
-__**Junk It**__ is still a work in progress. The mod is currently in a beta state and may have bugs.
+***Junk It*** is still a work in progress. The mod is currently in a beta state and may have bugs. Use it at your own risk.
 
 # Junk It
 
 This is a spiritual successor for the "Mark As Junk" mod. The author of mark as junk had a great idea but there has not been any updates to it since it's first release. 
 
-It was easy to see where they were headed with the mod, though the original is simple and only marks items with a "Junk" keyword and only while viewing the "Inventory" menu. This mod is a bit more advanced and allows marking items in any Menu that has an item list. 
+It was easy to see where they were headed with the mod, though the original is simple and only marks items with a "Junk" keyword and only while viewing the Inventory menu. This mod is a bit more advanced and allows marking items in any Menu that has an item list. 
 
 In addition to marking items as "Junk" there are several new utilities added to help with inventory management.
 
 ## Features
 
 - Mark items as "Junk" in any menu that has an item list using the "Mark As Junk" configurable hotkey.
-- Items marked as "Junk" will have a "Junk" icon displayed next to them.
-- Junk items now have their sub type set to "Junk" so that it can easily be sorted and filtered.
-- There is now a "Transfer" hotkey that can be configured in the MCM which changes it's functionality depending on which menu is open.
-- The "Transfer" hotkey will bulk sell all junk items while viewing the the "Barter" menu.
-- If viewing a container or trading with a follower, the "Transfer" hotkey will move all junk items to the container or follower.
-- Priority settings are available for both Bulk Sell and Transfer functions. The priority options are as follows:
-    - Weight: High to Low
-    - Weight: Low to High
-    - Value: High to Low
-    - Value: Low to High
-    - ValueWeight: High to Low
-    - ValueWeight: Low to High
+- I4 integration to get items marked as "Junk" to switch to a trash icon on the item list menu in real time.
+- I4 integration will also change the "subTypeDisplay" to "Junk" so it is easier to identify and sort your Junk.
+- Bulk transfer junk items when trading with NPCs or accessing containers using the "Transfer" configurable hotkey.
+- Easy Junk retrieval from containers or followers using the "Transfer" configurable hotkey.
+- Bulk sell junk items when trading with NPCs using the "Transfer" configurable hotkey.
+- Priority settings are available for both Bulk Sell and Transfer functions so you can control which items are transferred or sold first.
 - Bulk Sell and Transfer functions are limited to Gold Amount/Weight Capacity.
-- Junk items that are Equipped or Favorited will not show as "junk" and will be ignored by the Bulk Sell and Transfer functions.
-    - Prevents accidental selling/transfer of items that are currently in use.
+- Equipped and Favorited items are protected from being Transferred or Sold using the bulk actions. This is configurable in the MCM.
 
 ## Requirements
 
@@ -50,7 +43,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## Compatibility
 
 - This mod should be compatible with most other mods.
-- SKSE Plugin was built with CommonLibSSE NG and should work for all skyrim versions.
+- Built with CommonLibSSE NG, should work for all skyrim versions.
 
 ## To Do
 
@@ -59,6 +52,8 @@ In addition to marking items as "Junk" there are several new utilities added to 
 - [ ] Add Bulk Sell
 - [ ] Disable Bulk Transfer if while pick pocketing
 - [ ] Possibly add a "Buy Back" hotkey for the "Barter" menu
+- [ ] Freeze menu controls during Bulk Transfer/Bulk Sell/Marking
+- [ ] Add Debug mode to MCM to toggle console logging with papyrus utils
 - [ ] Add keyword control to dll to replace dependency on [PO3's Papyrus Extender](https://www.nexusmods.com/skyrimspecialedition/mods/22854)
 - [ ] Add functionality to control icons to get rid of dependency on [I4](https://www.nexusmods.com/skyrimspecialedition/mods/85702)
     - Not sure this will be completely possible, but at the very least I might be able to prevent favorited items from being affected by the "Junk" i4 rule
@@ -68,10 +63,6 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## Credits
 
 - [Mark As Junk](https://www.nexusmods.com/skyrimspecialedition/mods/105245) by [Lilmetal](https://www.nexusmods.com/skyrimspecialedition/users/945068) - Both the inspiration and a solid starting point for me to jump off from, thank you for your work!
-- [SKSE](https://skse.silverlock.org/)
-- [SkyUI](https://www.nexusmods.com/skyrimspecialedition/mods/12604)
-- [Inventory Interface Information Injector](https://www.nexusmods.com/skyrimspecialedition/mods/85702)
-- [Inventory Interface Information Injector for Skyrim 1.5](https://www.nexusmods.com/skyrimspecialedition/mods/87002) - Only required for Skyrim 1.5
 
 ## License
 
