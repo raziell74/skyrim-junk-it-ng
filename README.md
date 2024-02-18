@@ -54,7 +54,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 
 ## Credits
 
-- [Mark As Junk](https://www.nexusmods.com/skyrimspecialedition/mods/105245) by [Lilmetal](https://www.nexusmods.com/skyrimspecialedition/users/945068)
+- [Mark As Junk](https://www.nexusmods.com/skyrimspecialedition/mods/105245) by [Lilmetal](https://www.nexusmods.com/skyrimspecialedition/users/945068) - Both the inspiration and a solid starting point for me to jump off from, thank you for your work!
 - [SKSE](https://skse.silverlock.org/)
 - [SkyUI](https://www.nexusmods.com/skyrimspecialedition/mods/12604)
 - [Inventory Interface Information Injector](https://www.nexusmods.com/skyrimspecialedition/mods/85702)
