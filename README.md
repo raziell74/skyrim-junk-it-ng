@@ -50,7 +50,16 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## Compatibility
 
 - This mod should be compatible with most other mods.
-- SKSE Plugin was built with CommonLibSSE NG and should work for all skyrim versions. 
+- SKSE Plugin was built with CommonLibSSE NG and should work for all skyrim versions.
+
+## To Do
+
+- Create a JunkIt logo
+- Utilize JunkIt logo as a splash in the MCM
+- Add Bulk Sell
+- Disable Bulk Transfer if while pick pocketing
+- Possibly add a "Buy Back" hotkey for the "Barter" menu
+- Code Clean up and optimization refactor
 
 ## Credits
 
