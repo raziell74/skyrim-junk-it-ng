@@ -49,7 +49,8 @@
                             "$JunkIt_ValueHighToLow_ENUM",
                             "$JunkIt_ValueLowToHigh_ENUM",
                             "$JunkIt_ValueWeightHighToLow_ENUM",
-                            "$JunkIt_ValueWeightLowToHigh_ENUM"
+                            "$JunkIt_ValueWeightLowToHigh_ENUM",
+                            "$JunkIt_Chaos_ENUM"
                         ],
                         "sourceType": "ModSettingInt",
                         "defaultValue": 0
@@ -67,7 +68,8 @@
                             "$JunkIt_ValueHighToLow_ENUM",
                             "$JunkIt_ValueLowToHigh_ENUM",
                             "$JunkIt_ValueWeightHighToLow_ENUM",
-                            "$JunkIt_ValueWeightLowToHigh_ENUM"
+                            "$JunkIt_ValueWeightLowToHigh_ENUM",
+                            "$JunkIt_Chaos_ENUM"
                         ],
                         "sourceType": "ModSettingInt",
                         "defaultValue": 4
