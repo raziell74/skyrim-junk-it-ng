@@ -21,7 +21,6 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## Known Issues
 
 - [ ] Cannot Mark Ammo as "Junk".
-- [ ] Crashes or bugs occur if user does not have Papyrus Utils installed. I need to detect if Papyrus Utils is installed and not crash the game if it's not.
 - [x] ~~Occasionally items that were unmarked as junk will revert to using the "Junk" icon on game reload.~~
 - [x] ~~Shouldn't be able to transfer Junk when pick pocketing~~
 - [ ] Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt.
@@ -34,7 +33,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 
 ## Immediate plans for new features and improvements
 
-- [ ] Needs a Debug mode togglable in the MCM.
+- [x] ~~Needs a Debug mode togglable in the MCM.~~
 - [ ] Equipped/Favorited item protection MCM toggle.
 - [ ] Create a JunkIt logo to be used as a splash in the MCM.
 - [ ] "Reset Junk" button in MCM to clear all Junk items.
@@ -61,6 +60,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ### Optional
 
 - [Inventory Interface Information Injector for Skyrim 1.5](https://www.nexusmods.com/skyrimspecialedition/mods/87002) - If using v1.5.97
+- [PapyrusUtil SE - Modders Scripting Utility Functions](https://www.nexusmods.com/skyrimspecialedition/mods/13048) - Only required if enabling "Debug Mode" in the MCM.
 
 ## Installation
 

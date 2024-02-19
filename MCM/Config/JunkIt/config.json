@@ -181,6 +181,16 @@
                         "sourceType": "ModSettingBool",
                         "defaultValue": false
                     }
+                },
+                {
+                    "id": "bDebug:Maintenance",
+                    "type": "toggle",
+                    "text": "$JunkIt_DebugMode",
+                    "help": "$JunkIt_DebugMode_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
                 }
             ]
         }

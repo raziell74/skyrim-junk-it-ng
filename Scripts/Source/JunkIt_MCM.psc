@@ -80,7 +80,7 @@ Event OnGameReload()
     While i < iTotal
         Form item = UnjunkedList.GetAt(i)
         If item.HasKeyword(IsJunkKYWD)
-            MiscUtil.PrintConsole("JunkIt - Unjunking Correction for " + item.GetName() + " [" + item.GetFormID() + "] form")
+            VerboseMessage("Unjunking Correction for " + item.GetName() + " [" + item.GetFormID() + "] form")
             RemoveJunkKeyword(item)
         Else
             ; If the item does not have the junk keyword it is not bugged and can be removed from the watch list
@@ -95,7 +95,7 @@ Event OnGameReload()
     While i < iTotal
         Form item = JunkList.GetAt(i)
         If !item.HasKeyword(IsJunkKYWD)
-            MiscUtil.PrintConsole("JunkIt - Junking Correction for " + item.GetName() + " [" + item.GetFormID() + "] form")
+            VerboseMessage("Junking Correction for " + item.GetName() + " [" + item.GetFormID() + "] form")
             AddJunkKeyword(item)
         EndIf
         i += 1
@@ -238,7 +238,11 @@ Function MigrateToMCMHelper()
 EndFunction
 
 Function VerboseMessage(String m)
-    Debug.Trace("JunkIt - " + m)
+    If GetModSettingBool("bDebug:Maintenance")
+        Debug.Trace("JunkIt - " + m)
+        MiscUtil.PrintConsole("JunkIt - " + m)
+    EndIf
+
     If GetModSettingBool("bVerbose:Maintenance")
         Debug.Notification("JunkIt - " + m)
     EndIf
@@ -309,7 +313,7 @@ Function MarkAsJunk()
         RefreshUIIcons()
 
         If !success
-            MiscUtil.PrintConsole("JunkIt - Failed to unmark " + selected_item.GetName() + " as junk")
+            VerboseMessage("Failed to unmark " + selected_item.GetName() + " as junk")
             Debug.Notification("JunkIt - Failed to unmark " + selected_item.GetName() + " as junk")
             Return
         EndIf
@@ -324,7 +328,7 @@ Function MarkAsJunk()
             UnjunkedList.AddForm(selected_item)
         EndIf
 
-        MiscUtil.PrintConsole("JunkIt - Form: " + selected_item.GetName() + " [" + selectedFormId + "] is no longer marked as junk")
+        VerboseMessage("Form: " + selected_item.GetName() + " [" + selectedFormId + "] is no longer marked as junk")
         Debug.Notification("JunkIt - " + selected_item.GetName() + " is no longer marked as junk")
     Else
         ; Mark as Junk
@@ -332,7 +336,7 @@ Function MarkAsJunk()
         RefreshUIIcons()
         
         If !success
-            MiscUtil.PrintConsole("JunkIt - Failed to mark " + selected_item.GetName() + " as junk")
+            VerboseMessage("Failed to mark " + selected_item.GetName() + " as junk")
             Debug.Notification("JunkIt - Failed to mark " + selected_item.GetName() + " as junk")
             Return
         EndIf
@@ -347,7 +351,7 @@ Function MarkAsJunk()
             UnjunkedList.RemoveAddedForm(selected_item)
         EndIf
 
-        MiscUtil.PrintConsole("JunkIt - Form: " + selected_item.GetName() + " [" + selectedFormId + "] has been marked as junk")
+        VerboseMessage("Form: " + selected_item.GetName() + " [" + selectedFormId + "] has been marked as junk")
         Debug.Notification("JunkIt - " + selected_item.GetName() + " has been marked as junk")
     EndIf
 EndFunction
@@ -369,7 +373,7 @@ Function TransferJunk()
 
     ; disable if pickpocketing
     If containerMode == 2
-        MiscUtil.PrintConsole("JunkIt - Junk Transfer disabled while pickpocketing")
+        VerboseMessage("Junk Transfer disabled while pickpocketing")
         Debug.Notification("JunkIt - Junk Transfer disabled while pickpocketing")
         Return
     EndIf
@@ -377,7 +381,7 @@ Function TransferJunk()
     if menuView == 0 ; VIEWING CONTAINER
         ; Retrieve from container
         If transferContainer.GetItemCount(TransferList) <= 0
-            MiscUtil.PrintConsole("JunkIt - No Junk to retrieve!")
+            VerboseMessage("No Junk to retrieve!")
             Debug.Notification("JunkIt - No Junk to take!")
             Return
         EndIf
@@ -395,7 +399,7 @@ Function TransferJunk()
     Else  ; VIEWING PLAYER INVENTORY
         ; Transfer to container
         If PlayerREF.GetItemCount(TransferList) <= 0
-            MiscUtil.PrintConsole("JunkIt - No Junk to transfer!")
+            VerboseMessage("No Junk to transfer!")
             Debug.Notification("JunkIt - No Junk to transfer!")
             Return
         EndIf
@@ -414,7 +418,7 @@ Function TransferJunk()
 
     If canRetrieve == TRUE
         transferContainer.RemoveItem(TransferList, 1000, false, PlayerREF)
-        MiscUtil.PrintConsole("JunkIt - Junk Retrieved!")
+        VerboseMessage("Junk Retrieved!")
         Debug.Notification("JunkIt - Junk Retrieved!")
         Return
     EndIf
@@ -425,7 +429,7 @@ Function TransferJunk()
             Actor transferActor = transferContainer as Actor
             Int maxWeight = transferActor.GetActorValue("CarryWeight") as Int
             Int currentWeight = transferActor.GetActorValue("InventoryWeight") as Int
-            MiscUtil.PrintConsole("JunkIt - [NPC Mode] CarryWeight " + currentWeight + "/" + maxWeight)
+            VerboseMessage("[NPC Mode] CarryWeight " + currentWeight + "/" + maxWeight)
 
             Int iTotal = TransferList.GetSize()
             Int iCurrent = 0
@@ -449,7 +453,7 @@ Function TransferJunk()
                     If iCount > 0
                         PlayerREF.RemoveItem(item, iCount, false, transferContainer)
                         currentWeight += (itemWeight * iCount)
-                        MiscUtil.PrintConsole("JunkIt - Transferred " + iCount + " " + item.GetName() + " to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]" )
+                        VerboseMessage("Transferred " + iCount + " " + item.GetName() + " to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]" )
                         TotalTransferred += iCount
                     EndIf
                 EndIf
@@ -458,10 +462,10 @@ Function TransferJunk()
             EndWhile
 
             If TotalTransferred >= TotalPossibleTransferred
-                MiscUtil.PrintConsole("JunkIt - [NPC Mode] Transferred All Junk to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
+                VerboseMessage("[NPC Mode] Transferred All Junk to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
                 Debug.Notification("JunkIt - Transferred Junk!")
             Else
-                MiscUtil.PrintConsole("JunkIt - [NPC Mode] Transferred " + TotalTransferred + " Junk Items to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
+                VerboseMessage("[NPC Mode] Transferred " + TotalTransferred + " Junk Items to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
                 Debug.Notification("JunkIt - Transferred " + TotalTransferred + " Junk Items!")
             EndIf
         Else
@@ -480,15 +484,15 @@ Function SellJunk()
     Actor vendorActor = GetBarterMenuContainer() as Actor
     ObjectReference vendorContainer = GetBarterMenuMerchantContainer()
 
-    MiscUtil.PrintConsole("JunkIt - Vendor Actor FormId: " + vendorActor.GetFormID())
-    MiscUtil.PrintConsole("JunkIt - Vendor Container FormId: " + vendorContainer.GetFormID())
+    VerboseMessage("Vendor Actor FormId: " + vendorActor.GetFormID())
+    VerboseMessage("Vendor Container FormId: " + vendorContainer.GetFormID())
     
     Int menuView = UI.GetInt("BarterMenu", "_root.Menu_mc.inventoryLists.categoryList.activeSegment")
     FormList SellList = GetSellFormList()
 
     ; Check if the player has any junk to sell
     If PlayerREF.GetItemCount(SellList) <= 0
-        MiscUtil.PrintConsole("JunkIt - No Junk to sell!")
+        VerboseMessage("No Junk to sell!")
         Debug.Notification("JunkIt - No Junk to sell!")
         Return
     EndIf
@@ -498,9 +502,9 @@ Function SellJunk()
     Float buyMult = UI.GetFloat("BarterMenu", "_root.Menu_mc._buyMult")
     Float sellMult = UI.GetFloat("BarterMenu", "_root.Menu_mc._sellMult")
 
-    MiscUtil.PrintConsole("JunkIt - Vendor Gold: " + vendorGoldDisplay)
-    MiscUtil.PrintConsole("JunkIt - Vendor Buy Mult: " + buyMult)
-    MiscUtil.PrintConsole("JunkIt - Vendor Sell Mult: " + sellMult)
+    VerboseMessage("Vendor Gold: " + vendorGoldDisplay)
+    VerboseMessage("Vendor Buy Mult: " + buyMult)
+    VerboseMessage("Vendor Sell Mult: " + sellMult)
 
     FormList FinalizedSellList = SellList
     Int[] SellListCounts = Utility.CreateIntArray(SellList.GetSize())
@@ -532,7 +536,7 @@ Function SellJunk()
                 totalSellValue += sellValue * iCount
                 SellListCounts[iCurrent] = iCount
                 SellListValues[iCurrent] = sellValue
-                MiscUtil.PrintConsole("JunkIt - Caclulated Sell " + iCount + " " + item.GetName() + " for " + (sellValue * iCount) + " gold. Current calculated VendorGold total " + calculatedVendorGold + " gold")
+                VerboseMessage("Caclulated Sell " + iCount + " " + item.GetName() + " for " + (sellValue * iCount) + " gold. Current calculated VendorGold total " + calculatedVendorGold + " gold")
                 TotalToSell += iCount
             Else
                 ; Remove the item from the list if we can't sell any of it
@@ -545,7 +549,7 @@ Function SellJunk()
     EndWhile
 
     If TotalToSell <= 0
-        MiscUtil.PrintConsole("JunkIt - Vendor cannot afford to buy any junk!")
+        VerboseMessage("Vendor cannot afford to buy any junk!")
         Debug.Notification("JunkIt - Vendor cannot afford to buy any junk!")
         Return
     EndIf
@@ -581,7 +585,7 @@ Function SellJunk()
         If iCount > 0           
             ; Do the item exchange
             PlayerREF.RemoveItem(item, iCount, false, vendorContainer)
-            MiscUtil.PrintConsole("JunkIt - Sold " + iCount + " " + item.GetName() + " for " + iSaleValue + " gold")
+            VerboseMessage("Sold " + iCount + " " + item.GetName() + " for " + iSaleValue + " gold")
         EndIf
         iCurrent += 1
     EndWhile
@@ -589,10 +593,10 @@ Function SellJunk()
     ; @TODO - Include speech skill increase calculations from transactions
 
     If TotalToSell >= TotalPossibleToSell
-        MiscUtil.PrintConsole("JunkIt - Sold All Junk Items for " + totalSellValue + " Gold")
+        VerboseMessage("Sold All Junk Items for " + totalSellValue + " Gold")
         Debug.Notification("JunkIt - Sold Junk Items!")
     Else
-        MiscUtil.PrintConsole("JunkIt - Sold " + TotalToSell + " Junk Items for " + totalSellValue + " Gold")
+        VerboseMessage("Sold " + TotalToSell + " Junk Items for " + totalSellValue + " Gold")
         Debug.Notification("JunkIt - Sold " + TotalToSell + " Junk Items!")
     EndIf
 EndFunction
