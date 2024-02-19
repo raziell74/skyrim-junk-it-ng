@@ -20,12 +20,15 @@ In addition to marking items as "Junk" there are several new utilities added to 
 - Bulk Sell and Transfer functions are limited to Gold Amount/Weight Capacity.
 - Equipped and Favorited items are protected from being Transferred or Sold using the bulk actions. This is configurable in the MCM.
 
+## Known Issues
+
+- Attempting to mark enchanted arrows as "Junk" will cause the game to crash. This is a known issue and is being worked on. I've added a catch for items that do not allow keywords to be added to them, so these items won't be marked as "Junk" and will not crash the game.
+
 ## Requirements
 
 - [SKSE](https://skse.silverlock.org/)
 - [SkyUI](https://www.nexusmods.com/skyrimspecialedition/mods/12604)
 - [MCM Helper](https://www.nexusmods.com/skyrimspecialedition/mods/53000)
-- [powerofthree's Papyrus Extender](https://www.nexusmods.com/skyrimspecialedition/mods/22854)
 - [Inventory Interface Information Injector](https://www.nexusmods.com/skyrimspecialedition/mods/85702)
 
 ### Optional
@@ -50,13 +53,15 @@ In addition to marking items as "Junk" there are several new utilities added to 
 - [ ] Create a JunkIt logo
 - [ ] Utilize JunkIt logo as a splash in the MCM
 - [ ] Add Bulk Sell
-- [ ] Disable Bulk Transfer if while pick pocketing
+- [ ] Auto switch Barter menu to "Sell" tab when Bulk Selling
+- [x] Disable Bulk Transfer if while pick pocketing
 - [ ] Possibly add a "Buy Back" hotkey for the "Barter" menu
 - [ ] Freeze menu controls during Bulk Transfer/Bulk Sell/Marking
 - [ ] Add Debug mode to MCM to toggle console logging with papyrus utils
-- [ ] Add keyword control to dll to replace dependency on [PO3's Papyrus Extender](https://www.nexusmods.com/skyrimspecialedition/mods/22854)
+- [x] Add keyword control to dll to replace dependency on [PO3's Papyrus Extender](https://www.nexusmods.com/skyrimspecialedition/mods/22854)
 - [ ] Add functionality to control icons to get rid of dependency on [I4](https://www.nexusmods.com/skyrimspecialedition/mods/85702)
     - Not sure this will be completely possible, but at the very least I might be able to prevent favorited items from being affected by the "Junk" i4 rule
+- [ ] Optimize UI Icon refresh speed by only refreshing entries that match the selected formId
 - [ ] Code Clean up and optimization refactor
 - [ ] First Release!
 
