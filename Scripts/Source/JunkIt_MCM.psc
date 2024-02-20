@@ -51,65 +51,89 @@ FormList Function GetSellFormList() global native
 
 ; --- MCM Helper Functions ----------------------------------------------------------
 
-; Returns version of this script.
+; GetVersion
+; Returns the version of the MCM Helper
+;
+; @returns  Int  the version of the MCM Helper
 Int Function GetVersion()
     return 1 ;MCM Helper
 EndFunction
 
+; OnVersionUpdate
+; Event called when the MCM Helper version is updated
+;
+; @param aVersion Int  the new version of the MCM Helper
+; @returns  None
 Event OnVersionUpdate(int aVersion)
 	parent.OnVersionUpdate(aVersion)
     MigrateToMCMHelper()
-    VerboseMessage("OnVersionUpdate: MCM Updated")
+    VerboseMessage("OnVersionUpdate: MCM Updated", True)
     RefreshMenu()
 EndEvent
 
+; OnModConfigMenuOpen
 ; Event called periodically if the active magic effect/alias/form is registered for update events. This event will not be sent if the game is in menu mode. 
+;
+; @returns  None
 Event OnUpdate()
     parent.OnUpdate()
     If !migrated
         MigrateToMCMHelper()
         migrated = True
-        VerboseMessage("OnUpdate: Settings imported!")
+        VerboseMessage("OnUpdate: Settings imported!", True)
     EndIf
 EndEvent
 
-; Called when game is reloaded.
+; OnGameReload
+; Event called when the game is reloaded
+;
+; @returns  None
 Event OnGameReload()
     parent.OnGameReload()
     If !migrated
         MigrateToMCMHelper()
         migrated = True
-        VerboseMessage("OnGameReload: Settings imported!")
+        VerboseMessage("OnGameReload: Settings imported!", True)
     EndIf
     If GetModSettingBool("bLoadSettingsonReload:Maintenance")
         LoadSettings()
-        VerboseMessage("OnGameReload: Settings autoloaded!")
+        VerboseMessage("OnGameReload: Settings autoloaded!", True)
     EndIf
 
     LoadSettings()
 
-    ; BugFix: Corrects false positive junk keywords on load
+    ; -BugFix- Corrects false positive junk keywords on load
     JunkList = CorrectJunkListKeywords(JunkList, True)
     UnjunkedList = CorrectJunkListKeywords(UnjunkedList, False)
 EndEvent
 
-; Called when a new page is selected, including the initial empty page.
+; OnPageSelect
+; Event called when the player selects a page in the MCM
+;
+; @param a_page String  the name of the page
+; @returns  None
 Event OnPageSelect(String a_page)
     parent.OnPageSelect(a_page)
     RefreshMenu()
 EndEvent
 
+; OnConfigOpen
 ; Called when this config menu is opened.
+;
+; @returns  None
 Event OnConfigOpen()
     parent.OnConfigOpen()
     If !migrated
         MigrateToMCMHelper()
         migrated = True
-        VerboseMessage("OnConfigOpen: Settings imported!")
+        VerboseMessage("OnConfigOpen: Settings imported!", True)
     EndIf
 EndEvent
 
+; OnConfigInit
 ; Called when this config menu is initialized.
+;
+; @returns  None
 Event OnConfigInit()
     parent.OnConfigInit()
     migrated = True
@@ -128,7 +152,11 @@ Event OnConfigInit()
     EndIf
 EndEvent
 
-; Refreshes hotkey when toggled by the player.
+; OnSettingChange
+; Called when a setting is changed in the MCM
+;
+; @param a_ID String  the ID of the setting
+; @returns  None
 Event OnSettingChange(String a_ID)
     ; Hotkey Settings
     If a_ID == "iJunkKey:Hotkey"
@@ -164,6 +192,10 @@ Event OnSettingChange(String a_ID)
     RefreshDllSettings()
 EndEvent
 
+; Default
+; Resets the settings to their default values
+;
+; @returns  None
 Function Default()
     ; Hotkey Settings
     SetModSettingInt("iJunkKey:Hotkey", 50)
@@ -188,10 +220,14 @@ Function Default()
     SetModSettingInt("iLoadingDelay:Maintenance", 0)
     SetModSettingBool("bLoadSettingsonReload:Maintenance", False)
     SetModSettingBool("bVerbose:Maintenance", False)
-    VerboseMessage("Settings reset!")
+    VerboseMessage("Settings reset!", True)
     Load()
 EndFunction
 
+; Load
+; Loads the settings from the MCM
+;
+; @returns  None
 Function Load()
     ; Hotkey Settings
     UnregisterForKey(UserJunkKey)
@@ -215,19 +251,26 @@ Function Load()
     ProtectFavorites.SetValue(GetModSettingBool("bProtectFavorites:Protection") as Float)
 
     RefreshDllSettings()
-    VerboseMessage("Settings applied!")
+    VerboseMessage("Settings applied!", True)
 EndFunction
 
+; LoadSettings
+; Load on game reload if enabled in the MCM
+;
+; @returns  None
 Function LoadSettings()
     If GetModSettingBool("bEnabled:Maintenance") == false
         return
     EndIf
     Utility.Wait(GetModSettingInt("iLoadingDelay:Maintenance"))
-    VerboseMessage("Settings autoloaded!")
+    VerboseMessage("Settings autoloaded!", True)
     Load()
 EndFunction
 
-; Migrating to MCM Helper
+; MigrateToMCMHelper
+; Migrates settings from the old MCM to the MCM Helper
+;
+; @returns  None
 Function MigrateToMCMHelper()
     ; Hotkey Settings
     SetModSettingInt("iJunkKey:Hotkey", UserJunkKey)
@@ -246,13 +289,48 @@ Function MigrateToMCMHelper()
     SetModSettingBool("bProtectFavorites:Protection", ProtectFavorites.GetValue() as Bool)
 EndFunction
 
-Function VerboseMessage(String m)
+; ResetJunk
+; Resets the junk list
+;
+; @returns  None
+Function ResetJunk()
+    VerboseMessage("Resetting Junk List...")
+    Int i = 0
+    Int iTotal = JunkList.GetSize()
+    While i < iTotal
+        Form item = JunkList.GetAt(i)
+
+        If item.HasKeyword(IsJunkKYWD)
+            RemoveJunkKeyword(item)
+
+            ; We still need to track historical junk marking since Skyrim refuses to not save keywords on items even if they are removed
+            If !UnjunkedList.HasForm(item)
+                UnjunkedList.AddForm(item)
+            EndIf
+        EndIf
+
+        i += 1
+    EndWhile
+
+    JunkList.Revert()
+    VerboseMessage("Junk List reset!", True)
+    VerboseMessage("Junk List size after reset: " + JunkList.GetSize())
+    Debug.MessageBox("Junk List reset!")
+EndFunction
+
+; VerboseMessage
+; If DebugMode is enabled, logs a message to the console and the papyrus logging output.
+; If VerboseMode is enabled, logs are also sent to a player notification.
+;
+; @param m String  the message to log
+; @returns  None
+Function VerboseMessage(String m, Bool displayNotification = False)
     If GetModSettingBool("bDebug:Maintenance")
         Debug.Trace("JunkIt - " + m)
         MiscUtil.PrintConsole("JunkIt - " + m)
     EndIf
 
-    If GetModSettingBool("bVerbose:Maintenance")
+    If GetModSettingBool("bVerbose:Maintenance") && displayNotification
         Debug.Notification("JunkIt - " + m)
     EndIf
 EndFunction
@@ -474,7 +552,7 @@ Function TransferJunk()
             Actor transferActor = transferContainer as Actor
             Float maxWeight = transferActor.GetActorValue("CarryWeight")
             Float currentWeight = transferContainer.GetTotalItemWeight()
-            VerboseMessage("[NPC Mode] CarryWeight " + currentWeight + "/" + maxWeight)
+            VerboseMessage("[NPC Mode] CarryWeight " + currentWeight + "/" + maxWeight, True)
 
             Int iTotal = TransferList.GetSize()
             Int iCurrent = 0
@@ -698,7 +776,7 @@ Function SellJunk()
     ; Transfer all the items that we didn't have to individually sell
     If SellAllList.GetSize() > 0
         PlayerREF.RemoveItem(SellAllList, 9999, true, vendorContainer)
-        VerboseMessage("Transaction of full quantity item sales complete")
+        VerboseMessage("Transaction of full quantity item sales complete", True)
     EndIf
 
     ; @TODO - Include speech skill increase calculations from transactions
