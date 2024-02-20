@@ -76,6 +76,31 @@
                     }
                 },
                 {
+                    "type": "empty"
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_ProtectionsHeader"
+                },
+                {
+                    "id": "bProtectEquipped:Protection",
+                    "type": "toggle",
+                    "text": "$JunkIt_ProtectEquippedToggle",
+                    "help": "$JunkIt_ProtectEquippedToggle_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool"
+                    }
+                },
+                {
+                    "id": "bProtectFavorites:Protection",
+                    "type": "toggle",
+                    "text": "$JunkIt_ProtectFavoritesToggle",
+                    "help": "$JunkIt_ProtectFavoritesToggle_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool"
+                    }
+                },
+                {
                     "type": "header",
                     "text": "$JunkIt_HotkeyHeader",
                     "position": 1

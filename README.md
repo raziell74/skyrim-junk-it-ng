@@ -21,26 +21,22 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## Known Issues
 
 - [ ] Cannot Mark Ammo as "Junk".
-- [x] ~~Occasionally items that were unmarked as junk will revert to using the "Junk" icon on game reload.~~
-- [x] ~~Shouldn't be able to transfer Junk when pick pocketing~~
-- [ ] Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt.
-- [ ] Switching the selected entry while item marking is processing can sometimes mark the wrong item as Junk.
-- [ ] There is no indicator that equipped junk items are marked as junk or not. This is intended behavior, but I may add an MCM option to show equipped junk with the junk icon. 
-- [ ] Marking as junk will sometimes move the entry in the list due to the change in subTypeDisplay. I believe it's a better user experience for the entry to not change it's sort order until the menu is closed and reopened.
-- [ ] Bulk actions take a long time to process on large inventories. I am working on optimizations to speed up the process.
-- [ ] Marking items as junk can sometimes take a long time to process on large inventories. I am working on optimizations to speed up the process.
-- [ ] Bulk Junk transfer does not take NPC weight limits into account. Currently you can bulk transfer even if an NPC is over their weight limit.
+- [x] <span style="color:darkgreen">***Resolved***</span> ~~Occasionally items that were unmarked as junk will revert to using the "Junk" icon on game reload.~~
+- [x] <span style="color:darkgreen">***Resolved***</span> ~~Shouldn't be able to transfer Junk when pick pocketing~~
+- [ ] Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt. ***Note*** If someone knows the math formula for the speech skill experience increase when selling an item, please let me know. I have not been able to find it, so far all I know is that it is based on the base value of the item and the number of items doesn't matter (which is a bug that no one has fixed yet...)
+- [x] There is no indicator that equipped junk items are marked as junk or not. This is intended behavior. Unequip the item and the icon will update to reflect the items junk status.
+- [x] <span style="color:darkgreen">***Resolved***</span> ~~Bulk actions take a long time to process on large inventories. I am working on optimizations to speed up the process.~~ 
+- [x] Bulk Junk transfer does not take NPC weight limits into account. Currently you can bulk transfer even if an NPC is over their weight limit. <span style="color:darkgreen">***Resolved***</span>
 
 ## Immediate plans for new features and improvements
 
-- [x] ~~Needs a Debug mode togglable in the MCM.~~
-- [ ] Equipped/Favorited item protection MCM toggle.
+- [x] ~~Needs a Debug mode togglable in the MCM.~~ <span style="color:darkgray">***Done***</span>
+- [x] ~~Equipped/Favorited item protection MCM toggle.~~ <span style="color:darkgray">***Done***</span>
 - [ ] Create a JunkIt logo to be used as a splash in the MCM.
 - [ ] "Reset Junk" button in MCM to clear all Junk items.
-- [ ] Global Enable/Disable JunkIt mod toggle in MCM.
-- [ ] Speed optimizations for Bulk Transfer and Bulk Sell.
-- [ ] Speed optimizations for Marking items as Junk and icon updates.
-- [ ] UI Menu Lock/Fade during JunkIt actions. This provides a better user experience as it provides a visual cue of action processing as well as preventing any breaking actions from user input during processing.
+- [x] ~~Speed optimizations for Bulk Transfer and Bulk Sell.~~ <span style="color:darkgray">***Done***</span>
+- [x] ~~Speed optimizations for Marking items as Junk and icon updates.~~ <span style="color:darkgray">***Done***</span>
+- [x] ~~UI Menu Lock/Fade during JunkIt actions. This provides a better user experience as it provides a visual cue of action processing as well as preventing any breaking actions from user input during processing.~~ <span style="color:darkgray">***Done***</span>
 
 ## Stretch goals
 

@@ -1,6 +1,7 @@
 Scriptname JunkIt_MCM extends MCM_ConfigBase
 
-; Form Properties ---------------------------------------------------------------------------------
+;--- JunkIt Properties --------------------------------------------------------------
+
 Actor Property PlayerRef Auto
 Keyword Property IsJunkKYWD Auto
 FormList Property JunkList Auto
@@ -12,26 +13,43 @@ GlobalVariable Property ConfirmSell Auto
 GlobalVariable Property TransferPriority Auto
 GlobalVariable Property SellPriority Auto
 
+GlobalVariable Property ProtectEquipped Auto
+GlobalVariable Property ProtectFavorites Auto
+
 Message Property TransferConfirmationMsg Auto
 Message Property RetrievalConfirmationMsg Auto
 Message Property SellConfirmationMsg Auto
 
 MiscObject Property Gold001 Auto
 
-; Script Variables ---------------------------------------------------------------------------------
+;--- JunkIt Non Property MCM Variables ----------------------------------------------
+
 Int UserJunkKey = 50
 Int TransferJunkKey = 49
-String ActiveMenu = ""
 
-String ITEM_LIST_ROOT = "_root.Menu_mc.inventoryLists.itemList"
+;--- JunkIt Private Variables -------------------------------------------------------
 
-;--- Private Variables ----------------------------------------------------
 Bool migrated = False
 String plugin = "JunkIt.esp"
 
-; --- MCM Helper Functions ---------------------------------------------------
+String ActiveMenu = ""
 
+; --- JunkIt.dll Native Functions ---------------------------------------------------
 Function RefreshDllSettings() global native
+
+Int Function AddJunkKeyword(Form a_form) global native
+Int Function RemoveJunkKeyword(Form a_form) global native
+Function RefreshUIIcons() global native
+
+Int Function GetContainerMode() global native
+ObjectReference Function GetContainerMenuContainer() global native
+ObjectReference Function GetBarterMenuContainer() global native
+ObjectReference Function GetBarterMenuMerchantContainer() global native
+
+FormList Function GetTransferFormList() global native
+FormList Function GetSellFormList() global native
+
+; --- MCM Helper Functions ----------------------------------------------------------
 
 ; Returns version of this script.
 Int Function GetVersion()
@@ -68,38 +86,11 @@ Event OnGameReload()
         VerboseMessage("OnGameReload: Settings autoloaded!")
     EndIf
 
-    RegisterForMenu("InventoryMenu")
-    RegisterForMenu("ContainerMenu")
-    RegisterForMenu("BarterMenu")
-
     LoadSettings()
 
-    ; Loop through the UnjunkedList and remove the junk keyword from all items if they have it
-    Int i = 0
-    Int iTotal = UnjunkedList.GetSize()
-    While i < iTotal
-        Form item = UnjunkedList.GetAt(i)
-        If item.HasKeyword(IsJunkKYWD)
-            VerboseMessage("Unjunking Correction for " + item.GetName() + " [" + item.GetFormID() + "] form")
-            RemoveJunkKeyword(item)
-        Else
-            ; If the item does not have the junk keyword it is not bugged and can be removed from the watch list
-            UnjunkedList.RemoveAddedForm(item)
-        EndIf
-        i += 1
-    EndWhile
-
-    ; Loop through the JunkList and ensure all items have the junk keyword
-    i = 0
-    iTotal = JunkList.GetSize()
-    While i < iTotal
-        Form item = JunkList.GetAt(i)
-        If !item.HasKeyword(IsJunkKYWD)
-            VerboseMessage("Junking Correction for " + item.GetName() + " [" + item.GetFormID() + "] form")
-            AddJunkKeyword(item)
-        EndIf
-        i += 1
-    EndWhile
+    ; BugFix: Corrects false positive junk keywords on load
+    JunkList = CorrectJunkListKeywords(JunkList, True)
+    UnjunkedList = CorrectJunkListKeywords(UnjunkedList, False)
 EndEvent
 
 ; Called when a new page is selected, including the initial empty page.
@@ -162,6 +153,12 @@ Event OnSettingChange(String a_ID)
         TransferPriority.SetValue(GetModSettingInt(a_ID) as Float)
     ElseIf a_ID == "iSellPriority:Priority"
         SellPriority.SetValue(GetModSettingInt(a_ID) as Float)
+
+    ; Protection Settings
+    ElseIf a_ID == "bProtectEquipped:Protection"
+        ProtectEquipped.SetValue(GetModSettingBool(a_ID) as Float)
+    ElseIf a_ID == "bProtectFavorites:Protection"
+        ProtectFavorites.SetValue(GetModSettingBool(a_ID) as Float)
     EndIf
 
     RefreshDllSettings()
@@ -181,6 +178,10 @@ Function Default()
     ; Bulk Action Priority Settings
     SetModSettingInt("iTransferPriority:Priority", 0)
     SetModSettingInt("iSellPriority:Priority", 4)
+
+    ; Protection Settings
+    SetModSettingBool("bProtectEquipped:Protection", True)
+    SetModSettingBool("bProtectFavorites:Protection", True)
 
     ; Maintenance Settings
     SetModSettingBool("bEnabled:Maintenance", True)
@@ -209,6 +210,10 @@ Function Load()
     TransferPriority.SetValue(GetModSettingInt("iTransferPriority:Priority") as Float)
     SellPriority.SetValue(GetModSettingInt("iSellPriority:Priority") as Float)
 
+    ; Protection Settings
+    ProtectEquipped.SetValue(GetModSettingBool("bProtectEquipped:Protection") as Float)
+    ProtectFavorites.SetValue(GetModSettingBool("bProtectFavorites:Protection") as Float)
+
     RefreshDllSettings()
     VerboseMessage("Settings applied!")
 EndFunction
@@ -235,6 +240,10 @@ Function MigrateToMCMHelper()
     ; Bulk Action Priority Settings
     SetModSettingInt("iTransferPriority:Priority", TransferPriority.GetValue() as Int)
     SetModSettingInt("iSellPriority:Priority", SellPriority.GetValue() as Int)
+
+    ; Protection Settings
+    SetModSettingBool("bProtectEquipped:Protection", ProtectEquipped.GetValue() as Bool)
+    SetModSettingBool("bProtectFavorites:Protection", ProtectFavorites.GetValue() as Bool)
 EndFunction
 
 Function VerboseMessage(String m)
@@ -248,40 +257,39 @@ Function VerboseMessage(String m)
     EndIf
 EndFunction
 
-; --- JunkIt Native Functions ---------------------------------------------------------------------------------
-
-Int Function AddJunkKeyword(Form a_form) global native
-Int Function RemoveJunkKeyword(Form a_form) global native
-Function RefreshUIIcons() global native
-
-Int Function GetContainerMode() global native
-ObjectReference Function GetContainerMenuContainer() global native
-ObjectReference Function GetBarterMenuContainer() global native
-ObjectReference Function GetBarterMenuMerchantContainer() global native
-FormList Function GetTransferFormList() global native
-FormList Function GetSellFormList() global native
-Int Function GetFormUIEntryIndex(String menuName, Int formId) global native
-
 ; --- JunkIt Functionality ---------------------------------------------------
 
-; When the player opens the Inventory Menu, we start listening for the hotkey.
+; OnMenuOpen
+; Enables the hotkey when the player opens the Inventory Menu.
+;
+; @param MenuName String  the name of the menu
+; @returns  None
 Event OnMenuOpen(String MenuName)
     ActiveMenu = MenuName
     GotoState("")
 EndEvent
 
-; When the player closes the Inventory Menu, we stop listening for the hotkey.
+; OnMenuClose
+; Disables the hotkey when the player closes the Inventory Menu.
+;
+; @param MenuName String  the name of the menu
+; @returns  None
 Event OnMenuClose(String MenuName)
     ActiveMenu = ""
     GotoState("busy")
 EndEvent
 
-; When the player presses the hotkey, while in the Inventory Menu, the item they're highlighting is marked as junk.
-Event OnKeyUp(Int KeyCode, Float HoldTime)
+; OnKeyDown
+; Listens for the hotkey and performs the appropriate action based on the active menu.
+;
+; @param KeyCode Int  the key code
+; @param HoldTime Float  the hold time
+; @returns  None
+Event OnKeyDown(Int KeyCode)
     If ActiveMenu != "" && !UI.IsTextInputEnabled()
         GotoState("busy")
         If KeyCode == UserJunkKey
-            MarkAsJunk()
+            ToggleIsJunk()
         EndIf
 
         If KeyCode == TransferJunkKey
@@ -296,67 +304,102 @@ Event OnKeyUp(Int KeyCode, Float HoldTime)
 EndEvent
 
 State busy
-    ; Ignore key presses if already processing a command or not in a menu
-    Event OnKeyUp(Int KeyCode, Float HoldTime)
+    ; OnKeyDown
+    ; Disables event during busy state
+    ;
+    ; @param KeyCode Int  the key code
+    ; @param HoldTime Float  the hold time
+    ; @returns  None
+    Event OnKeyDown(Int KeyCode)
     EndEvent
 EndState
 
-; Toggles the junk status of the selected item in an Item Menu.
-Function MarkAsJunk()
+; ToggleIsJunk
+; Toggles the selected item in an Item Menu as junk or not junk.
+;
+; @returns  None
+Function ToggleIsJunk()
     ; Get the selected item in the Item Menu
-    Int selectedFormId = UI.GetInt(ActiveMenu, ITEM_LIST_ROOT + ".selectedEntry.formId")
+    Int selectedFormId = UI.GetInt(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId")
     Form selected_item = Game.GetFormEx(selectedFormId)
 
-    If selected_item.HasKeyword(IsJunkKYWD)
-        ; Unmark as Junk
-        Bool success = RemoveJunkKeyword(selected_item) as Bool
-        RefreshUIIcons()
-
-        If !success
-            VerboseMessage("Failed to unmark " + selected_item.GetName() + " as junk")
-            Debug.Notification("JunkIt - Failed to unmark " + selected_item.GetName() + " as junk")
-            Return
-        EndIf
-        
-        ; Update Junk FormList
-        If JunkList.HasForm(selected_item)
-            JunkList.RemoveAddedForm(selected_item)
-        EndIf
-
-        ; Keep track of unjunked items for GameLoad keyword correction
-        If !UnjunkedList.HasForm(selected_item)
-            UnjunkedList.AddForm(selected_item)
-        EndIf
-
-        VerboseMessage("Form: " + selected_item.GetName() + " [" + selectedFormId + "] is no longer marked as junk")
-        Debug.Notification("JunkIt - " + selected_item.GetName() + " is no longer marked as junk")
+    If !selected_item.HasKeyword(IsJunkKYWD)
+        MarkAsJunk(selected_item)
     Else
-        ; Mark as Junk
-        Bool success = AddJunkKeyword(selected_item) as Bool
-        RefreshUIIcons()
-        
-        If !success
-            VerboseMessage("Failed to mark " + selected_item.GetName() + " as junk")
-            Debug.Notification("JunkIt - Failed to mark " + selected_item.GetName() + " as junk")
-            Return
-        EndIf
-
-        ; Update Junk FormList
-        If !JunkList.HasForm(selected_item)
-            JunkList.AddForm(selected_item)
-        EndIf
-
-        ; Stop tracking this item for GameLoad keyword correction
-        If UnjunkedList.HasForm(selected_item)
-            UnjunkedList.RemoveAddedForm(selected_item)
-        EndIf
-
-        VerboseMessage("Form: " + selected_item.GetName() + " [" + selectedFormId + "] has been marked as junk")
-        Debug.Notification("JunkIt - " + selected_item.GetName() + " has been marked as junk")
+        UnmarkAsJunk(selected_item)
     EndIf
 EndFunction
 
-; Transfer/Retrieve junk items
+; MarkAsJunk
+; Marks the selected item in an Item Menu as junk.
+;
+; @param item Form  the item to mark as junk
+; @returns  None
+Function MarkAsJunk(Form item)
+    LockItemListUI()
+
+    Bool success = AddJunkKeyword(item) as Bool
+    
+    If !success
+        VerboseMessage("Failed to mark " + item.GetName() + " as junk")
+        Debug.MessageBox("JunkIt - Failed to mark " + item.GetName() + " as junk")
+        UnlockItemListUI()
+        Return
+    EndIf
+
+    VerboseMessage("Form: " + item.GetName() + " has been marked as junk")
+    Debug.Notification("JunkIt - " + item.GetName() + " has been marked as junk")
+
+    UnlockItemListUI()
+
+    ; Update Junk FormList
+    If !JunkList.HasForm(item)
+        JunkList.AddForm(item)
+    EndIf
+
+    ; Stop tracking this item for GameLoad keyword correction
+    If UnjunkedList.HasForm(item)
+        UnjunkedList.RemoveAddedForm(item)
+    EndIf
+EndFunction
+
+; UnmarkAsJunk
+; Unmarks the selected item in an Item Menu as junk.
+;
+; @param item Form  the item to unmark as junk
+; @returns  None
+Function UnmarkAsJunk(Form item)
+    LockItemListUI()
+    Bool success = RemoveJunkKeyword(item) as Bool
+    
+    If !success
+        VerboseMessage("Failed to unmark " + item.GetName() + " as junk")
+        Debug.MessageBox("JunkIt - Failed to unmark " + item.GetName() + " as junk")
+        UnlockItemListUI()
+        Return
+    EndIf
+
+    VerboseMessage("Form: " + item.GetName() + " is no longer marked as junk")
+    Debug.Notification("JunkIt - " + item.GetName() + " is no longer marked as junk")
+
+    UnlockItemListUI()
+    
+    ; Update Junk FormList
+    If JunkList.HasForm(item)
+        JunkList.RemoveAddedForm(item)
+    EndIf
+
+    ; Keep track of unjunked items for GameLoad keyword correction
+    If !UnjunkedList.HasForm(item)
+        UnjunkedList.AddForm(item)
+    EndIf
+EndFunction
+
+; TransferJunk
+; Transfers Junk Items to the container/NPC or retrieves them 
+; from the container if UI is showing the players inventory
+;
+; @returns  None
 Function TransferJunk()
     If JunkList.GetSize() <= 0
         Return
@@ -374,7 +417,7 @@ Function TransferJunk()
     ; disable if pickpocketing
     If containerMode == 2
         VerboseMessage("Junk Transfer disabled while pickpocketing")
-        Debug.Notification("JunkIt - Junk Transfer disabled while pickpocketing")
+        Debug.MessageBox("Junk Transfer is disabled while pickpocketing")
         Return
     EndIf
 
@@ -382,7 +425,7 @@ Function TransferJunk()
         ; Retrieve from container
         If transferContainer.GetItemCount(TransferList) <= 0
             VerboseMessage("No Junk to retrieve!")
-            Debug.Notification("JunkIt - No Junk to take!")
+            Debug.MessageBox("No Junk to take!")
             Return
         EndIf
 
@@ -400,7 +443,7 @@ Function TransferJunk()
         ; Transfer to container
         If PlayerREF.GetItemCount(TransferList) <= 0
             VerboseMessage("No Junk to transfer!")
-            Debug.Notification("JunkIt - No Junk to transfer!")
+            Debug.MessageBox("No Junk to transfer!")
             Return
         EndIf
 
@@ -417,9 +460,11 @@ Function TransferJunk()
     EndIf
 
     If canRetrieve == TRUE
-        transferContainer.RemoveItem(TransferList, 1000, false, PlayerREF)
+        LockItemListUI()
+        transferContainer.RemoveItem(TransferList, 9999, true, PlayerREF)
         VerboseMessage("Junk Retrieved!")
         Debug.Notification("JunkIt - Junk Retrieved!")
+        UnlockItemListUI()
         Return
     EndIf
 
@@ -427,8 +472,8 @@ Function TransferJunk()
         ; Find out if we're trading with an NPC and account for their carry weight
         If(containerMode == 3) ; NPC Mode
             Actor transferActor = transferContainer as Actor
-            Int maxWeight = transferActor.GetActorValue("CarryWeight") as Int
-            Int currentWeight = transferActor.GetActorValue("InventoryWeight") as Int
+            Float maxWeight = transferActor.GetActorValue("CarryWeight")
+            Float currentWeight = transferContainer.GetTotalItemWeight()
             VerboseMessage("[NPC Mode] CarryWeight " + currentWeight + "/" + maxWeight)
 
             Int iTotal = TransferList.GetSize()
@@ -436,68 +481,106 @@ Function TransferJunk()
             Int TotalTransferred = 0
             Int TotalPossibleTransferred = 0
 
+            FormList TransferAllList = TransferList
+
+            LockItemListUI()
+
             While iCurrent < iTotal
                 Form item = TransferList.GetAt(iCurrent)	
     		    Int iCount = PlayerREF.GetItemCount(item)
+                Int iTotalCount = iCount
                 TotalPossibleTransferred += iCount
     		
                 If iCount > 0
-                    Int itemWeight = item.GetWeight() as Int
-                    Int currentWeightWithItems = (itemWeight * iCount) + currentWeight
+                    Float itemWeight = item.GetWeight()
+                    Float currentWeightWithItems = (itemWeight * iCount) + currentWeight
                     
                     While currentWeightWithItems > maxWeight
                         iCount -= 1
                         currentWeightWithItems = (itemWeight * iCount) + currentWeight
                     EndWhile
 
-                    If iCount > 0
-                        PlayerREF.RemoveItem(item, iCount, false, transferContainer)
+                    If iCount > 0 && iCount < iTotalCount
+                        ; Transfer only a limited quantity of this item
+                        PlayerREF.RemoveItem(item, iCount, true, transferContainer)
                         currentWeight += (itemWeight * iCount)
-                        VerboseMessage("Transferred " + iCount + " " + item.GetName() + " to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]" )
                         TotalTransferred += iCount
+
+                        ; Ignore this item for the bulk transfer
+                        TransferAllList.RemoveAddedForm(item)
+
+                        VerboseMessage("Transferred limited quantity " + iCount + " " + item.GetName() + " to " + transferActor.GetName() + " [" + RoundNumber(currentWeight) + "/" + RoundNumber(maxWeight) + "]" )
+                    ElseIf iCount <= 0
+                        ; We cannot transfer any of this item so remove it from the bulk transfer list
+                        TransferAllList.RemoveAddedForm(item)
+                    Else
+                        ; Can transfer the full quanity of this item, let it remain in the bulk transfer list
+                        TotalTransferred += iCount
+                        currentWeight += (itemWeight * iCount)
+                        VerboseMessage("Listing " + iCount + " " + item.GetName() + " for full quantity transfer to " + transferActor.GetName() + " [" + RoundNumber(currentWeight) + "/" + RoundNumber(maxWeight) + "]" )
                     EndIf
                 EndIf
 
                 iCurrent += 1
             EndWhile
 
+            ; Do Bulk Transfer of items that we can transfer all of
+            If TransferAllList.GetSize() > 0
+                PlayerREF.RemoveItem(TransferAllList, 9999, true, transferContainer)
+            EndIf
+
             If TotalTransferred >= TotalPossibleTransferred
                 VerboseMessage("[NPC Mode] Transferred All Junk to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
-                Debug.Notification("JunkIt - Transferred Junk!")
+                Debug.Notification("JunkIt - Transferred All Junk!")
             Else
                 VerboseMessage("[NPC Mode] Transferred " + TotalTransferred + " Junk Items to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
                 Debug.Notification("JunkIt - Transferred " + TotalTransferred + " Junk Items!")
             EndIf
+
+            UnlockItemListUI()
         Else
-            PlayerREF.RemoveItem(TransferList, 1000, false, transferContainer)
+            LockItemListUI()
+            PlayerREF.RemoveItem(TransferList, 9999, true, transferContainer)
             Debug.Notification("JunkIt - Transferred Junk!")
+            UnlockItemListUI()
         EndIf
     EndIf
 EndFunction
 
-; Bulk Sell junk items to a merchant
+; SellJunk
+; Sells all junk items to the vendor
+;
+; @returns  None
 Function SellJunk()
     If JunkList.GetSize() <= 0
+        VerboseMessage("No Junk to sell!")
+        Debug.MessageBox("No Junk to sell!")
         Return
     EndIf
-    
-    Actor vendorActor = GetBarterMenuContainer() as Actor
-    ObjectReference vendorContainer = GetBarterMenuMerchantContainer()
 
-    VerboseMessage("Vendor Actor FormId: " + vendorActor.GetFormID())
-    VerboseMessage("Vendor Container FormId: " + vendorContainer.GetFormID())
-    
-    Int menuView = UI.GetInt("BarterMenu", "_root.Menu_mc.inventoryLists.categoryList.activeSegment")
+    ; JunkIt.dll Native function gets a filtered 
+    ; version of the junk list that is 
+    ; sorted by priority, equip and favorite filtered, 
+    ; and limited to only items in this barter session
     FormList SellList = GetSellFormList()
 
-    ; Check if the player has any junk to sell
+    ; Check if the players inventory has any junk to sell
     If PlayerREF.GetItemCount(SellList) <= 0
         VerboseMessage("No Junk to sell!")
         Debug.Notification("JunkIt - No Junk to sell!")
         Return
     EndIf
+    
+    ; Get the actors and containers involved in the barter
+    Actor vendorActor = GetBarterMenuContainer() as Actor
+    ObjectReference vendorContainer = GetBarterMenuMerchantContainer()
+
+    VerboseMessage("Vendor Actor FormId: " + vendorActor.GetFormID())
+    VerboseMessage("Vendor Container FormId: " + vendorContainer.GetFormID())
 
     Debug.Notification("JunkIt - Selling junk please wait...")
+    LockItemListUI()
+
     Float vendorGoldDisplay = UI.GetFloat("BarterMenu", "_root.Menu_mc._vendorGold")
     Float buyMult = UI.GetFloat("BarterMenu", "_root.Menu_mc._buyMult")
     Float sellMult = UI.GetFloat("BarterMenu", "_root.Menu_mc._sellMult")
@@ -506,9 +589,6 @@ Function SellJunk()
     VerboseMessage("Vendor Buy Mult: " + buyMult)
     VerboseMessage("Vendor Sell Mult: " + sellMult)
 
-    FormList FinalizedSellList = SellList
-    Int[] SellListCounts = Utility.CreateIntArray(SellList.GetSize())
-    Float[] SellListValues = Utility.CreateFloatArray(SellList.GetSize())
     Int iTotal = SellList.GetSize()
     Int iCurrent = 0
     Int TotalToSell = 0
@@ -516,9 +596,18 @@ Function SellJunk()
     Float calculatedVendorGold = vendorGoldDisplay
     Float totalSellValue = 0
 
+    ; These represent the final items to be sold
+    FormList SellAllList = SellList
+    Form[] SellPartialList = new Form[125]
+    Int[] SellPartialCounts = new Int[125]
+    Int PartialSellItemCount = 0
+
+    VerboseMessage("Sell List Size: " + SellList.GetSize())
+    
     While iCurrent < iTotal
         Form item = SellList.GetAt(iCurrent)	
         Int iCount = PlayerREF.GetItemCount(item)
+        Int iTotalCount = iCount
         TotalPossibleToSell += iCount
 
         ; Calculate how many junk items we can sell based on the vendors gold
@@ -526,31 +615,46 @@ Function SellJunk()
             Float sellValue = (item.GetGoldValue() * sellMult)
             Float goldDifferential = calculatedVendorGold - (sellValue * iCount)
             
-            While Math.Ceiling(goldDifferential) <= 0 && iCount > 0
+            While RoundNumber(goldDifferential) <= 0 && iCount > 0
                 iCount -= 1
                 goldDifferential = calculatedVendorGold - (sellValue * iCount)
             EndWhile
 
-            If iCount > 0
+            If iCount > 0 && iCount < iTotalCount
+                ; We can only sell a limited amount of this item
+                SellAllList.RemoveAddedForm(item)
+
+                ; Add this item as a listing for partial sale and track the quantity to be sold
+                SellPartialCounts[PartialSellItemCount] = iCount
+                SellPartialList[PartialSellItemCount] = item
+                VerboseMessage("Creating partial listing for " + iCount + " " + item.GetName() + " at index " + PartialSellItemCount + " for " + (sellValue * iCount) + " gold. Post sale VendorGold is " + RoundNumber(vendorGoldDisplay - totalSellValue) + " gold")
+                PartialSellItemCount += 1
+
+                ; Update our totals for the confirmation message
                 calculatedVendorGold -= sellValue * iCount
                 totalSellValue += sellValue * iCount
-                SellListCounts[iCurrent] = iCount
-                SellListValues[iCurrent] = sellValue
-                VerboseMessage("Caclulated Sell " + iCount + " " + item.GetName() + " for " + (sellValue * iCount) + " gold. Current calculated VendorGold total " + calculatedVendorGold + " gold")
                 TotalToSell += iCount
+            ElseIf iCount <= 0
+                ; We cannot sell any of this item so remove it from the bulk sell list
+                SellAllList.RemoveAddedForm(item)
             Else
-                ; Remove the item from the list if we can't sell any of it
-                SellListCounts[iCurrent] = 0
-                SellListValues[iCurrent] = 0
+                ; We can sell the full quanity of this item
+                calculatedVendorGold -= sellValue * iCount
+                totalSellValue += sellValue * iCount
+                TotalToSell += iCount
+
+                VerboseMessage("Calculated Full Quantity Sell " + iCount + " " + item.GetName() + " for " + (sellValue * iCount) + " gold. Post sale VendorGold is " + RoundNumber(vendorGoldDisplay - totalSellValue) + " gold")
             EndIf
         EndIf
 
         iCurrent += 1
     EndWhile
 
+    ; After calculations check if the vendor could afford any of the junk
     If TotalToSell <= 0
         VerboseMessage("Vendor cannot afford to buy any junk!")
-        Debug.Notification("JunkIt - Vendor cannot afford to buy any junk!")
+        Debug.MessageBox("Vendor cannot afford to buy any junk!")
+        UnlockItemListUI()
         Return
     EndIf
 
@@ -558,37 +662,44 @@ Function SellJunk()
     If ConfirmSell.GetValue() >= 1
         Int iConfChoice = SellConfirmationMsg.Show(RoundNumber(totalSellValue))
         If(iConfChoice == 1) ;No
+            UnlockItemListUI()
             Return
         EndIf
     EndIf
 
-    ; Move any gold the vendor has to the vendorContainer so we only have to deal with a single source of gold
+    ; Move any gold the vendor has on them to the vendorContainer so we only have to deal with a single source of gold
     Int vendorActorGold = vendorActor.GetItemCount(Gold001)
     If vendorActorGold > 0
-        vendorActor.RemoveItem(Gold001, vendorActorGold, false, vendorContainer)
+        vendorActor.RemoveItem(Gold001, vendorActorGold, true, vendorContainer)
     Endif
 
-    ; Gold payout - Needs to be down before item exchange for a proper UI update on vendor gold
+    ; Handle the Gold payout for the junk sale
     vendorContainer.RemoveItem(Gold001, RoundNumber(totalSellValue), false, PlayerREF)
 
-    ; Ensure the UI is correctly updated
+    ; Update UI with the new vendor gold total, the itemlist update can not be trusted
     UI.SetFloat("BarterMenu", "_root.Menu_mc._vendorGold", RoundNumber(vendorGoldDisplay - totalSellValue))
 
-    ; Sell the junk items
-    iCurrent = 0
-    While iCurrent < iTotal
-        Form item = SellList.GetAt(iCurrent)
-        Int iCount = SellListCounts[iCurrent]
-        Float iSaleValue = SellListValues[iCurrent] * iCount
+    ; Transfer partial quantity item listings
+    Int PartialIndex = 0
+    VerboseMessage("SellPartialList Size: " + PartialSellItemCount)
+    While PartialIndex < PartialSellItemCount
+        Form item = SellPartialList[PartialIndex]
+        Int iCount = SellPartialCounts[PartialIndex]
         
         ; Double check item sale count
-        If iCount > 0           
+        If iCount > 0
             ; Do the item exchange
-            PlayerREF.RemoveItem(item, iCount, false, vendorContainer)
-            VerboseMessage("Sold " + iCount + " " + item.GetName() + " for " + iSaleValue + " gold")
+            PlayerREF.RemoveItem(item, iCount, true, vendorContainer)
+            VerboseMessage("Transaction for partial quantity listing " + iCount + " " + item.GetName() + " at index " + PartialIndex + " complete")
         EndIf
-        iCurrent += 1
+        PartialIndex += 1
     EndWhile
+
+    ; Transfer all the items that we didn't have to individually sell
+    If SellAllList.GetSize() > 0
+        PlayerREF.RemoveItem(SellAllList, 9999, true, vendorContainer)
+        VerboseMessage("Transaction of full quantity item sales complete")
+    EndIf
 
     ; @TODO - Include speech skill increase calculations from transactions
 
@@ -599,8 +710,44 @@ Function SellJunk()
         VerboseMessage("Sold " + TotalToSell + " Junk Items for " + totalSellValue + " Gold")
         Debug.Notification("JunkIt - Sold " + TotalToSell + " Junk Items!")
     EndIf
+
+    UnlockItemListUI()
 EndFunction
 
+; --- JunkIt Utilities --------------------------------------------------------------
+
+; CorrectJunkListKeywords 
+; Iterates through a formlist to add or remove the junk keyword
+;
+; @param List   FormList  the formlist to iterate through
+; @param IsJunk Bool  whether to add or remove the junk keyword
+; @returns  FormList  the modified formlist
+FormList Function CorrectJunkListKeywords(FormList List, Bool IsJunk = True)
+    Int i = 0
+    Int iTotal = List.GetSize()
+    
+    While i < iTotal
+        Form item = List.GetAt(i)
+
+        If IsJunk && !item.HasKeyword(IsJunkKYWD)
+            VerboseMessage("Item Correction: Marking " + item.GetName() + " as junk")
+            AddJunkKeyword(item)
+        ElseIf !IsJunk && item.HasKeyword(IsJunkKYWD)
+            VerboseMessage("Item Correction: Removing junk keyword from " + item.GetName())
+            RemoveJunkKeyword(item)
+        EndIf
+
+        i += 1
+    EndWhile
+
+    Return List
+EndFunction
+
+; RoundNumber
+; Rounds a float to the nearest integer
+;
+; @param number Float  the number to round
+; @returns  Int  the rounded number
 Int Function RoundNumber (Float number)
     Float ceilingNumber = Math.Ceiling(number) as Float
 
@@ -608,5 +755,32 @@ Int Function RoundNumber (Float number)
         Return Math.Floor(number)
     Else
         Return Math.Ceiling(number)
+    EndIf
+EndFunction
+
+; LockItemListUI
+; Disables the UI for the ItemList in the InventoryMenu
+;
+; @returns  None
+Function LockItemListUI()
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", true)
+EndFunction
+
+; UnlockItemListUI
+; Enables the UI for the ItemList in the InventoryMenu
+;
+; @param bUpdateUI Bool  whether to update the UI icons
+; @returns  None
+Function UnlockItemListUI(bool bUpdateUI = true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", false)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", false)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", false)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", false)
+
+    If bUpdateUI
+        RefreshUIIcons()
     EndIf
 EndFunction
