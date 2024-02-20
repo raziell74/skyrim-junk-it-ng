@@ -124,6 +124,27 @@
                     "valueOptions": {
                         "sourceType": "ModSettingInt"
                     }
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_UtilityHeader"
+                },
+                {
+                    "id": "sResetJunk:Utility",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_ResetJunk_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": "$JunkIt_ResetJunk"
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "ResetJunk"
+                    }
                 }
             ]
         },

@@ -38,14 +38,6 @@ In addition to marking items as "Junk" there are several new utilities added to 
 - [x] ~~Speed optimizations for Marking items as Junk and icon updates.~~ <span style="color:darkgray">***Done***</span>
 - [x] ~~UI Menu Lock/Fade during JunkIt actions. This provides a better user experience as it provides a visual cue of action processing as well as preventing any breaking actions from user input during processing.~~ <span style="color:darkgray">***Done***</span>
 
-## Stretch goals
-
-- [ ] Add new Junk type "Rubbish" for items that are not even worth selling
-- [ ] Configurable option to prevent the "Take All" action in container menus from taking items marked as "Rubbish"
-- [ ] MCM button to save and load a list of Junk items to be shared between saves
-- [ ] Favorited items should not show as "junk" but I4 has no way of filtering on "Favorited", so I am trying to figure out a way to supersede I4's rule set for favorited items. This may come with my own implementation of inventory icon control since the author of I4 probably has no plans on adding favorited as a filter option.
-- [ ] Barter "Buy Back". Items sold to a vendor will have a special buy back icon and SubTypeDisplay to indicate this is a buy back item. The value price of to buy the item will be hard set to what ever the item was sold for. *This is a **Super Stretch** goal as it gets pretty complex. Rolling it into JunkIt may also not make sense as it's a pretty big feature and could be it's a standalone mod in its own right.*
-
 ## Requirements
 
 - [SKSE](https://skse.silverlock.org/)
