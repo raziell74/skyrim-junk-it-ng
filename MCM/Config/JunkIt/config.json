@@ -76,6 +76,31 @@
                     }
                 },
                 {
+                    "type": "empty"
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_ProtectionsHeader"
+                },
+                {
+                    "id": "bProtectEquipped:Protection",
+                    "type": "toggle",
+                    "text": "$JunkIt_ProtectEquippedToggle",
+                    "help": "$JunkIt_ProtectEquippedToggle_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool"
+                    }
+                },
+                {
+                    "id": "bProtectFavorites:Protection",
+                    "type": "toggle",
+                    "text": "$JunkIt_ProtectFavoritesToggle",
+                    "help": "$JunkIt_ProtectFavoritesToggle_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool"
+                    }
+                },
+                {
                     "type": "header",
                     "text": "$JunkIt_HotkeyHeader",
                     "position": 1
@@ -98,6 +123,27 @@
                     "ignoreConflicts": true,
                     "valueOptions": {
                         "sourceType": "ModSettingInt"
+                    }
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_UtilityHeader"
+                },
+                {
+                    "id": "sResetJunk:Utility",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_ResetJunk_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": "$JunkIt_ResetJunk"
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "ResetJunk"
                     }
                 }
             ]
@@ -177,6 +223,16 @@
                     "type": "toggle",
                     "text": "$Verbose",
                     "help": "$VerboseMaintenance_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
+                },
+                {
+                    "id": "bDebug:Maintenance",
+                    "type": "toggle",
+                    "text": "$JunkIt_DebugMode",
+                    "help": "$JunkIt_DebugMode_Help",
                     "valueOptions": {
                         "sourceType": "ModSettingBool",
                         "defaultValue": false
