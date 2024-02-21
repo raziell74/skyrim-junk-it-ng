@@ -21,19 +21,19 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## Known Issues
 
 - [ ] Cannot Mark Ammo as "Junk".
+- [ ] Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt. ***Note*** If someone knows the math formula for the speech skill experience increase when selling an item, please let me know. I have not been able to find it, so far all I know is that it is based on the base value of the item and the number of items doesn't matter (which is a bug that no one has fixed yet...)
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Occasionally items that were unmarked as junk will revert to using the "Junk" icon on game reload.~~
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Shouldn't be able to transfer Junk when pick pocketing~~
-- [ ] Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt. ***Note*** If someone knows the math formula for the speech skill experience increase when selling an item, please let me know. I have not been able to find it, so far all I know is that it is based on the base value of the item and the number of items doesn't matter (which is a bug that no one has fixed yet...)
 - [x] There is no indicator that equipped junk items are marked as junk or not. This is intended behavior. Unequip the item and the icon will update to reflect the items junk status.
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Bulk actions take a long time to process on large inventories. I am working on optimizations to speed up the process.~~ 
-- [x] Bulk Junk transfer does not take NPC weight limits into account. Currently you can bulk transfer even if an NPC is over their weight limit. <span style="color:darkgreen">***Resolved***</span>
+- [x] ~~Bulk Junk transfer does not take NPC weight limits into account. Currently you can bulk transfer even if an NPC is over their weight limit.~~ <span style="color:darkgreen">***Resolved***</span>
 
 ## Immediate plans for new features and improvements
 
+- [ ] Create a JunkIt logo to be used as a splash in the MCM.
 - [x] ~~Needs a Debug mode togglable in the MCM.~~ <span style="color:darkgray">***Done***</span>
 - [x] ~~Equipped/Favorited item protection MCM toggle.~~ <span style="color:darkgray">***Done***</span>
-- [ ] Create a JunkIt logo to be used as a splash in the MCM.
-- [ ] "Reset Junk" button in MCM to clear all Junk items.
+- [x] ~~"Reset Junk" button in MCM to clear all Junk items.~~ <span style="color:darkgray">***Done***</span>
 - [x] ~~Speed optimizations for Bulk Transfer and Bulk Sell.~~ <span style="color:darkgray">***Done***</span>
 - [x] ~~Speed optimizations for Marking items as Junk and icon updates.~~ <span style="color:darkgray">***Done***</span>
 - [x] ~~UI Menu Lock/Fade during JunkIt actions. This provides a better user experience as it provides a visual cue of action processing as well as preventing any breaking actions from user input during processing.~~ <span style="color:darkgray">***Done***</span>
