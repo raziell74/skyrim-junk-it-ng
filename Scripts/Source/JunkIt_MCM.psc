@@ -114,6 +114,7 @@ EndEvent
 ; @returns  None
 Event OnPageSelect(String a_page)
     parent.OnPageSelect(a_page)
+    SetModSettingString("sResetJunk:Utility", "$JunkIt_ResetJunk")
     RefreshMenu()
 EndEvent
 
@@ -295,6 +296,9 @@ EndFunction
 ; @returns  None
 Function ResetJunk()
     VerboseMessage("Resetting Junk List...")
+    SetModSettingString("sResetJunk:Utility", "$JunkIt_ResetingJunk")
+    RefreshMenu()
+
     Int i = 0
     Int iTotal = JunkList.GetSize()
     While i < iTotal
@@ -316,6 +320,9 @@ Function ResetJunk()
     VerboseMessage("Junk List reset!", True)
     VerboseMessage("Junk List size after reset: " + JunkList.GetSize())
     Debug.MessageBox("Junk List reset!")
+
+    SetModSettingString("sResetJunk:Utility", "$JunkIt_JunkReset")
+    RefreshMenu()
 EndFunction
 
 ; VerboseMessage

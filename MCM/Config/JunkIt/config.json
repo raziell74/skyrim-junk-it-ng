@@ -31,9 +31,6 @@
                     }
                 },
                 {
-                    "type": "empty"
-                },
-                {
                     "type": "header",
                     "text": "$JunkIt_PriorityHeader"
                 },
@@ -74,9 +71,6 @@
                         "sourceType": "ModSettingInt",
                         "defaultValue": 4
                     }
-                },
-                {
-                    "type": "empty"
                 },
                 {
                     "type": "header",
@@ -126,11 +120,18 @@
                     }
                 },
                 {
-                    "type": "empty"
-                },
-                {
                     "type": "header",
                     "text": "$JunkIt_UtilityHeader"
+                },
+                {
+                    "id": "bDebug:Maintenance",
+                    "type": "toggle",
+                    "text": "$JunkIt_DebugMode",
+                    "help": "$JunkIt_DebugMode_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
                 },
                 {
                     "id": "sResetJunk:Utility",
@@ -139,7 +140,8 @@
                     "help": "$JunkIt_ResetJunk_Help",
                     "valueOptions": {
                         "sourceType": "ModSettingString",
-                        "defaultValue": "$JunkIt_ResetJunk"
+                        "defaultValue": "$JunkIt_ResetJunk",
+                        "value": "$JunkIt_ResetJunk"
                     },
                     "action": {
                         "type": "CallFunction",
@@ -223,16 +225,6 @@
                     "type": "toggle",
                     "text": "$Verbose",
                     "help": "$VerboseMaintenance_Help",
-                    "valueOptions": {
-                        "sourceType": "ModSettingBool",
-                        "defaultValue": false
-                    }
-                },
-                {
-                    "id": "bDebug:Maintenance",
-                    "type": "toggle",
-                    "text": "$JunkIt_DebugMode",
-                    "help": "$JunkIt_DebugMode_Help",
                     "valueOptions": {
                         "sourceType": "ModSettingBool",
                         "defaultValue": false
