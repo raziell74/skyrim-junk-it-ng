@@ -652,7 +652,7 @@ Function SellJunk()
     ; Check if the players inventory has any junk to sell
     If PlayerREF.GetItemCount(SellList) <= 0
         VerboseMessage("No Junk to sell!")
-        Debug.Notification("JunkIt - No Junk to sell!")
+        Debug.MessageBox("No Junk to sell!")
         Return
     EndIf
     
