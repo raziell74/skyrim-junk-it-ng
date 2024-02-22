@@ -5,6 +5,13 @@
     "pluginRequirements": [
         "JunkIt.esp"
     ],
+    "cursorFillMode": "topToBottom",
+    "content": [],
+    "customContent": {
+        "source": "JunkIt/JunkIt_splash_512x512.dds",
+        "x": 120,
+        "y": -53
+    },
     "pages": [
         {
             "pageDisplayName": "$JunkIt_Page_Settings",
@@ -132,6 +139,12 @@
                         "sourceType": "ModSettingBool",
                         "defaultValue": false
                     }
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
                 },
                 {
                     "id": "sResetJunk:Utility",
