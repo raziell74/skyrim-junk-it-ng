@@ -35,6 +35,7 @@ String plugin = "JunkIt.esp"
 String ActiveMenu = ""
 
 ; --- JunkIt.dll Native Functions ---------------------------------------------------
+
 Function RefreshDllSettings() global native
 
 Int Function AddJunkKeyword(Form a_form) global native
@@ -546,7 +547,10 @@ Function TransferJunk()
 
     If canRetrieve == TRUE
         LockItemListUI()
-        transferContainer.RemoveItem(TransferList, 9999, true, PlayerREF)
+        While transferContainer.GetItemCount(TransferList) > 0
+            transferContainer.RemoveItem(TransferList, 50, true, PlayerREF)
+            Utility.wait(0.1)
+        EndWhile
         VerboseMessage("Junk Retrieved!")
         Debug.Notification("JunkIt - Junk Retrieved!")
         UnlockItemListUI()
@@ -611,21 +615,30 @@ Function TransferJunk()
 
             ; Do Bulk Transfer of items that we can transfer all of
             If TransferAllList.GetSize() > 0
-                PlayerREF.RemoveItem(TransferAllList, 9999, true, transferContainer)
+                While PlayerREF.GetItemCount(TransferAllList) > 0
+                    PlayerREF.RemoveItem(TransferAllList, 50, true, transferContainer)
+                    Utility.wait(0.1)
+                EndWhile
             EndIf
 
-            If TotalTransferred >= TotalPossibleTransferred
-                VerboseMessage("[NPC Mode] Transferred All Junk to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
+            If TotalTransferred == 0
+                VerboseMessage("[NPC Mode] NPC cannot carry any more junk")
+                Debug.MessageBox("This person cannot carry any more")
+            ElseIf TotalTransferred >= TotalPossibleTransferred
+                VerboseMessage("[NPC Mode] Transferred All Junk to " + transferActor.GetName() + " [" + RoundNumber(currentWeight) + "/" + RoundNumber(maxWeight) + "]")
                 Debug.Notification("JunkIt - Transferred All Junk!")
             Else
-                VerboseMessage("[NPC Mode] Transferred " + TotalTransferred + " Junk Items to " + transferActor.GetName() + " [" + currentWeight + "/" + maxWeight + "]")
+                VerboseMessage("[NPC Mode] Transferred " + TotalTransferred + " Junk Items to " + transferActor.GetName() + " [" + RoundNumber(currentWeight) + "/" + RoundNumber(maxWeight) + "]")
                 Debug.Notification("JunkIt - Transferred " + TotalTransferred + " Junk Items!")
             EndIf
 
             UnlockItemListUI()
         Else
             LockItemListUI()
-            PlayerREF.RemoveItem(TransferList, 9999, true, transferContainer)
+            While PlayerREF.GetItemCount(TransferList) > 0
+                PlayerREF.RemoveItem(TransferList, 50, true, transferContainer)
+                Utility.wait(0.1)
+            EndWhile
             Debug.Notification("JunkIt - Transferred Junk!")
             UnlockItemListUI()
         EndIf
@@ -782,7 +795,10 @@ Function SellJunk()
 
     ; Transfer all the items that we didn't have to individually sell
     If SellAllList.GetSize() > 0
-        PlayerREF.RemoveItem(SellAllList, 9999, true, vendorContainer)
+        While PlayerREF.GetItemCount(SellAllList) > 0
+            PlayerREF.RemoveItem(SellAllList, 50, true, vendorContainer)
+            Utility.wait(0.1)
+        EndWhile
         VerboseMessage("Transaction of full quantity item sales complete", True)
     EndIf
 
@@ -835,7 +851,6 @@ EndFunction
 ; @returns  Int  the rounded number
 Int Function RoundNumber (Float number)
     Float ceilingNumber = Math.Ceiling(number) as Float
-
     If ((ceilingNumber - number) > 0.5)
         Return Math.Floor(number)
     Else
