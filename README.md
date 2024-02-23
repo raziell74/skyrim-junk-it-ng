@@ -24,6 +24,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 - [ ] Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt.
     Formula: Skill Use Mult * (base XP * skill specific multipliers) + Skill Use Offset
     1 base XP per gold used in transaction
+- [x] ~~Rarely the players carry weight will be set to a very large negative number when transferring loot. I believe this is due to the remove quantity on the form lists being set to a very large amount to ensure all items are transferred regardless of quantity.~~ <span style="color:darkgreen">***Resolved***</span>
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Occasionally items that were unmarked as junk will revert to using the "Junk" icon on game reload.~~
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Shouldn't be able to transfer Junk when pick pocketing~~
 - [x] There is no indicator that equipped junk items are marked as junk or not. This is intended behavior. Unequip the item and the icon will update to reflect the items junk status.
@@ -32,7 +33,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 
 ## Immediate plans for new features and improvements
 
-- [ ] Create a JunkIt logo to be used as a splash in the MCM.
+- [x] ~~Create a JunkIt logo to be used as a splash in the MCM.~~
 - [x] ~~Needs a Debug mode togglable in the MCM.~~ <span style="color:darkgray">***Done***</span>
 - [x] ~~Equipped/Favorited item protection MCM toggle.~~ <span style="color:darkgray">***Done***</span>
 - [x] ~~"Reset Junk" button in MCM to clear all Junk items.~~ <span style="color:darkgray">***Done***</span>
