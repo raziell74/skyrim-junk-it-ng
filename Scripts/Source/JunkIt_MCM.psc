@@ -832,6 +832,10 @@ Function SellJunk()
     EndIf
 
     UnlockItemListUI()
+
+    ; Wait a moment to allow the transfer operation to fully complete
+    Utility.wait(0.2)
+    RefreshUIIcons()
 EndFunction
 
 ; --- JunkIt Utilities --------------------------------------------------------------
