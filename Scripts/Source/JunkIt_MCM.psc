@@ -108,6 +108,18 @@ Event OnGameReload()
     UnjunkedList = CorrectJunkListKeywords(UnjunkedList, False)
 EndEvent
 
+; OnPlayerLoadGame
+; Event is only sent to the player actor. This would probably be on a magic effect or alias script
+;
+; @returns  None
+Event OnPlayerLoadGame()
+    ; -BugFix- Corrects false positive junk keywords on load
+    JunkList = CorrectJunkListKeywords(JunkList, True)
+    UnjunkedList = CorrectJunkListKeywords(UnjunkedList, False)
+
+    VerboseMessage("OnPlayerLoadGame: Applying keyword corrections")
+endEvent
+
 ; OnPageSelect
 ; Event called when the player selects a page in the MCM
 ;
@@ -331,6 +343,7 @@ EndFunction
 ; If VerboseMode is enabled, logs are also sent to a player notification.
 ;
 ; @param m String  the message to log
+; @param displayNotification Bool  whether to display a notification
 ; @returns  None
 Function VerboseMessage(String m, Bool displayNotification = False)
     If GetModSettingBool("bDebug:Maintenance")
@@ -802,7 +815,13 @@ Function SellJunk()
         VerboseMessage("Transaction of full quantity item sales complete", True)
     EndIf
 
-    ; @TODO - Include speech skill increase calculations from transactions
+    ; Speechcraft experience is calculated by 1 base XP per gold used in transactions.
+    ; Formula: skillUseMult * (base Xp * fSpeechCraftMult) + skillUseOffset
+    ; The experience gained by passing in The base XP to the AvanceSkill function should adhere to the correct experience gain formula
+    Game.AdvanceSkill("SpeechCraft", totalSellValue)
+
+    ; Also increment the game stats for the number of barters. Some other mods rely on this for quirky fun reasons
+    Game.IncrementStat("Barters", TotalToSell)
 
     If TotalToSell >= TotalPossibleToSell
         VerboseMessage("Sold All Junk Items for " + totalSellValue + " Gold")
