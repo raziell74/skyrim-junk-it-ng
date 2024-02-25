@@ -506,8 +506,8 @@ EndFunction
 ;
 ; @returns  None
 Function TransferJunk()
-    RefreshUIIcons()
     If JunkList.GetSize() <= 0
+        RefreshUIIcons()
         Return
     EndIf
 
@@ -532,6 +532,7 @@ Function TransferJunk()
         If transferContainer.GetItemCount(TransferList) <= 0
             VerboseMessage("No Junk to retrieve!")
             Debug.MessageBox("No Junk to take!")
+            RefreshUIIcons()
             Return
         EndIf
 
@@ -670,10 +671,10 @@ EndFunction
 ;
 ; @returns  None
 Function SellJunk()
-    RefreshUIIcons()
     If JunkList.GetSize() <= 0
         VerboseMessage("No Junk to sell!")
         Debug.MessageBox("No Junk to sell!")
+        RefreshUIIcons()
         Return
     EndIf
 
