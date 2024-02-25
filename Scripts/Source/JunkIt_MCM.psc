@@ -15,6 +15,7 @@ GlobalVariable Property SellPriority Auto
 
 GlobalVariable Property ProtectEquipped Auto
 GlobalVariable Property ProtectFavorites Auto
+GlobalVariable Property ProtectEnchanted Auto
 
 Message Property TransferConfirmationMsg Auto
 Message Property RetrievalConfirmationMsg Auto
@@ -201,6 +202,8 @@ Event OnSettingChange(String a_ID)
         ProtectEquipped.SetValue(GetModSettingBool(a_ID) as Float)
     ElseIf a_ID == "bProtectFavorites:Protection"
         ProtectFavorites.SetValue(GetModSettingBool(a_ID) as Float)
+    ElseIf a_ID == "bProtectEnchanted:Protection"
+        ProtectEnchanted.SetValue(GetModSettingBool(a_ID) as Float)
     EndIf
 
     RefreshDllSettings()
@@ -228,6 +231,7 @@ Function Default()
     ; Protection Settings
     SetModSettingBool("bProtectEquipped:Protection", True)
     SetModSettingBool("bProtectFavorites:Protection", True)
+    SetModSettingBool("bProtectEnchanted:Protection", False)
 
     ; Maintenance Settings
     SetModSettingBool("bEnabled:Maintenance", True)
@@ -263,6 +267,7 @@ Function Load()
     ; Protection Settings
     ProtectEquipped.SetValue(GetModSettingBool("bProtectEquipped:Protection") as Float)
     ProtectFavorites.SetValue(GetModSettingBool("bProtectFavorites:Protection") as Float)
+    ProtectEnchanted.SetValue(GetModSettingBool("bProtectEnchanted:Protection") as Float)
 
     RefreshDllSettings()
     VerboseMessage("Settings applied!", True)
@@ -301,6 +306,7 @@ Function MigrateToMCMHelper()
     ; Protection Settings
     SetModSettingBool("bProtectEquipped:Protection", ProtectEquipped.GetValue() as Bool)
     SetModSettingBool("bProtectFavorites:Protection", ProtectFavorites.GetValue() as Bool)
+    SetModSettingBool("bProtectEnchanted:Protection", ProtectEnchanted.GetValue() as Bool)
 EndFunction
 
 ; ResetJunk

@@ -102,6 +102,15 @@
                     }
                 },
                 {
+                    "id": "bProtectEnchanted:Protection",
+                    "type": "toggle",
+                    "text": "$JunkIt_ProtectEnchantedToggle",
+                    "help": "$JunkIt_ProtectEnchantedToggle_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool"
+                    }
+                },
+                {
                     "type": "header",
                     "text": "$JunkIt_HotkeyHeader",
                     "position": 1
