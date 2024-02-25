@@ -21,15 +21,14 @@ In addition to marking items as "Junk" there are several new utilities added to 
 ## Known Issues
 
 - [ ] Cannot Mark Ammo as "Junk".
-- [ ] Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt.
-    Formula: Skill Use Mult * (base XP * skill specific multipliers) + Skill Use Offset
-    1 base XP per gold used in transaction
+- [x] ~~Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt.~~
 - [x] ~~Rarely the players carry weight will be set to a very large negative number when transferring loot. I believe this is due to the remove quantity on the form lists being set to a very large amount to ensure all items are transferred regardless of quantity.~~ <span style="color:darkgreen">***Resolved***</span>
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Occasionally items that were unmarked as junk will revert to using the "Junk" icon on game reload.~~
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Shouldn't be able to transfer Junk when pick pocketing~~
 - [x] There is no indicator that equipped junk items are marked as junk or not. This is intended behavior. Unequip the item and the icon will update to reflect the items junk status.
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Bulk actions take a long time to process on large inventories. I am working on optimizations to speed up the process.~~ 
 - [x] ~~Bulk Junk transfer does not take NPC weight limits into account. Currently you can bulk transfer even if an NPC is over their weight limit.~~ <span style="color:darkgreen">***Resolved***</span>
+- [ ] The game saves item keyword changes to the game save, but cannot reverse them. Marking items as "Junk" will add to the game save bloat. This is a game engine limitation. We're already keeping two formlists for items: marked as junk, and unmarked as junk. I need to limit the amount of save bloat by only have the same keep a single formlist for items marked as Junk. To accomplish this I need to implement my own version of junk tracking through the UI. The update should replace the I4 requirement as well as be compatible with I4. 
 
 ## Immediate plans for new features and improvements
 
