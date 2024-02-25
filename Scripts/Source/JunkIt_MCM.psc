@@ -506,6 +506,7 @@ EndFunction
 ;
 ; @returns  None
 Function TransferJunk()
+    RefreshUIIcons()
     If JunkList.GetSize() <= 0
         Return
     EndIf
@@ -669,6 +670,7 @@ EndFunction
 ;
 ; @returns  None
 Function SellJunk()
+    RefreshUIIcons()
     If JunkList.GetSize() <= 0
         VerboseMessage("No Junk to sell!")
         Debug.MessageBox("No Junk to sell!")
@@ -691,6 +693,11 @@ Function SellJunk()
     ; Get the actors and containers involved in the barter
     Actor vendorActor = GetBarterMenuContainer() as Actor
     ObjectReference vendorContainer = GetBarterMenuMerchantContainer()
+
+    If !vendorContainer
+        VerboseMessage("Vendor Container not found!")
+        vendorContainer = vendorActor as ObjectReference
+    EndIf
 
     VerboseMessage("Vendor Actor FormId: " + vendorActor.GetFormID())
     VerboseMessage("Vendor Container FormId: " + vendorContainer.GetFormID())
@@ -784,17 +791,25 @@ Function SellJunk()
         EndIf
     EndIf
 
-    ; Move any gold the vendor has on them to the vendorContainer so we only have to deal with a single source of gold
+    ; Get payout from vendors on hand gold first then container
+    Int goldToGimme = RoundNumber(totalSellValue)
     Int vendorActorGold = vendorActor.GetItemCount(Gold001)
     If vendorActorGold > 0
-        vendorActor.RemoveItem(Gold001, vendorActorGold, true, vendorContainer)
+        vendorActor.RemoveItem(Gold001, goldToGimme, false, PlayerREF)
+        goldToGimme -= vendorActorGold
     Endif
 
-    ; Handle the Gold payout for the junk sale
-    vendorContainer.RemoveItem(Gold001, RoundNumber(totalSellValue), false, PlayerREF)
+    ; If the vendors on hand gold was not enough, take the rest from the container
+    If goldToGimme > 0
+        vendorContainer.RemoveItem(Gold001, goldToGimme, false, PlayerREF)
+    EndIf
 
     ; Update UI with the new vendor gold total, the itemlist update can not be trusted
-    UI.SetFloat("BarterMenu", "_root.Menu_mc._vendorGold", RoundNumber(vendorGoldDisplay - totalSellValue))
+    Int totalVendorGoldLeft = RoundNumber(vendorGoldDisplay - totalSellValue)
+    If totalVendorGoldLeft < 0
+        totalVendorGoldLeft = 0
+    EndIf
+    UI.SetFloat("BarterMenu", "_root.Menu_mc._vendorGold", totalVendorGoldLeft)
 
     ; Transfer partial quantity item listings
     Int PartialIndex = 0
