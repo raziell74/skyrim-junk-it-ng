@@ -47,6 +47,7 @@ Int Function GetContainerMode() global native
 ObjectReference Function GetContainerMenuContainer() global native
 ObjectReference Function GetBarterMenuContainer() global native
 ObjectReference Function GetBarterMenuMerchantContainer() global native
+Int Function GetMenuItemValue(Form a_form) global native
 
 FormList Function GetTransferFormList() global native
 FormList Function GetSellFormList() global native
@@ -426,6 +427,11 @@ EndState
 Function ToggleIsJunk()
     ; Get the selected item in the Item Menu
     Int selectedFormId = UI.GetInt(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId")
+    If !selectedFormId
+        VerboseMessage("No item selected!")
+        Debug.Notification("JunkIt - No item selected!")
+        Return
+    EndIf
     Form selected_item = Game.GetFormEx(selectedFormId)
 
     If !selected_item.HasKeyword(IsJunkKYWD)
@@ -737,7 +743,14 @@ Function SellJunk()
 
         ; Calculate how many junk items we can sell based on the vendors gold
         If iCount > 0
-            Float sellValue = (item.GetGoldValue() * sellMult)
+            ; My native function has a more accurate gold value calculation than the papyrus item.GetGoldValue()
+            ; Native function also accurately calculates values for stock enchantments and custom player enchantments
+            Float itemGoldValue = GetMenuItemValue(item) as Float
+            
+            VerboseMessage("SKSE Sell Value: " + item.GetName() + " sells for " + RoundNumber(itemGoldValue * sellMult))
+            VerboseMessage("Papyrus Sell Value: " + item.GetName() + " sells for " + RoundNumber(item.GetGoldValue() * sellMult))
+
+            Float sellValue = (itemGoldValue * sellMult)
             Float goldDifferential = calculatedVendorGold - (sellValue * iCount)
             
             While RoundNumber(goldDifferential) <= 0 && iCount > 0
