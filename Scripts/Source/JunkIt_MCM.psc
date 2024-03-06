@@ -49,6 +49,7 @@ String ActiveMenu = ""
 
 Function RefreshDllSettings() global native
 
+Form Function ToggleSelectedAsJunk() global native
 Int Function AddJunkKeyword(Form a_form) global native
 Int Function RemoveJunkKeyword(Form a_form) global native
 Function FreezeItemListUI() global native
@@ -486,20 +487,35 @@ EndState
 ;
 ; @returns  None
 Function ToggleIsJunk()
-    ; Get the selected item in the Item Menu
-    Int selectedFormId = UI.GetInt(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId")
-    If !selectedFormId
+    Form item = ToggleSelectedAsJunk()
+
+    If !item
         VerboseMessage("No item selected!")
         Debug.Notification("JunkIt - No item selected!")
         Return
     EndIf
-    Form selected_item = Game.GetFormEx(selectedFormId)
 
-    If !selected_item.HasKeyword(IsJunkKYWD)
-        MarkAsJunk(selected_item)
+    ; Update formlists post junk toggle
+    If item.HasKeyword(IsJunkKYWD)
+        MarkAsJunk(item)
     Else
-        UnmarkAsJunk(selected_item)
-    EndIf
+        UnmarkAsJunk(item)
+    Endif
+
+    ; Get the selected item in the Item Menu
+    ;Int selectedFormId = UI.GetInt(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId")
+    ;If !selectedFormId
+    ;    VerboseMessage("No item selected!")
+    ;    Debug.Notification("JunkIt - No item selected!")
+    ;    Return
+    ;EndIf
+    ;Form selected_item = Game.GetFormEx(selectedFormId)
+
+    ;If !selected_item.HasKeyword(IsJunkKYWD)
+    ;    MarkAsJunk(selected_item)
+    ;Else
+    ;    UnmarkAsJunk(selected_item)
+    ;EndIf
 EndFunction
 
 ; MarkAsJunk
@@ -508,13 +524,13 @@ EndFunction
 ; @param item Form  the item to mark as junk
 ; @returns  None
 Function MarkAsJunk(Form item)
-    Bool success = AddJunkKeyword(item) as Bool
+    ;Bool success = AddJunkKeyword(item) as Bool
     
-    If !success
-        VerboseMessage("Failed to mark " + item.GetName() + " as junk")
-        Debug.MessageBox("JunkIt - Failed to mark " + item.GetName() + " as junk")
-        Return
-    EndIf
+    ;If !success
+    ;    VerboseMessage("Failed to mark " + item.GetName() + " as junk")
+    ;    Debug.MessageBox("JunkIt - Failed to mark " + item.GetName() + " as junk")
+    ;    Return
+    ;EndIf
 
     VerboseMessage("Form: " + item.GetName() + " has been marked as junk")
     If NotifyOnMarkUnmark.GetValue() >= 1
@@ -531,8 +547,8 @@ Function MarkAsJunk(Form item)
         UnjunkedList.RemoveAddedForm(item)
     EndIf
 
-    Utility.wait(1.0)
-    RefreshUIIcons()
+    ;Utility.wait(1.0)
+    ;RefreshUIIcons()
 EndFunction
 
 ; UnmarkAsJunk
@@ -541,14 +557,14 @@ EndFunction
 ; @param item Form  the item to unmark as junk
 ; @returns  None
 Function UnmarkAsJunk(Form item)
-    Bool success = RemoveJunkKeyword(item) as Bool
+    ; Bool success = RemoveJunkKeyword(item) as Bool
     
-    If !success
-        VerboseMessage("Failed to unmark " + item.GetName() + " as junk")
-        Debug.MessageBox("JunkIt - Failed to unmark " + item.GetName() + " as junk")
-        RefreshUIIcons()
-        Return
-    EndIf
+    ;If !success
+    ;    VerboseMessage("Failed to unmark " + item.GetName() + " as junk")
+    ;    Debug.MessageBox("JunkIt - Failed to unmark " + item.GetName() + " as junk")
+    ;    ;RefreshUIIcons()
+    ;    Return
+    ;EndIf
 
     VerboseMessage("Form: " + item.GetName() + " is no longer marked as junk")
     If NotifyOnMarkUnmark.GetValue() >= 1
@@ -565,8 +581,8 @@ Function UnmarkAsJunk(Form item)
         UnjunkedList.AddForm(item)
     EndIf
 
-    Utility.wait(1.0)
-    RefreshUIIcons()
+    ;Utility.wait(1.0)
+    ;RefreshUIIcons()
 EndFunction
 
 ; TransferJunk
@@ -1010,12 +1026,12 @@ EndFunction
 ;
 ; @returns  None
 Function LockItemListUI()
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", true)
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", true)
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", true)
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", true)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", true)
 
-    FreezeItemListUI()
+    ;FreezeItemListUI()
 EndFunction
 
 ; UnlockItemListUI
@@ -1024,12 +1040,11 @@ EndFunction
 ; @param bUpdateUI Bool  whether to update the UI icons
 ; @returns  None
 Function UnlockItemListUI(bool bUpdateUI = true)
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", false)
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", false)
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", false)
-    ;UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", false)
-
-    ThawItemListUI()
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", false)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", false)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", false)
+    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", false)
+    ; ThawItemListUI()
 
     If bUpdateUI
         Utility.wait(0.5)
