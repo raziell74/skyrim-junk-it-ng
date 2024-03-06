@@ -137,6 +137,63 @@
                 },
                 {
                     "type": "header",
+                    "text": "$JunkIt_MiscSettingsHeader"
+                },
+                {
+                    "id": "bNotifyOnMarkUnmark:MiscSettings",
+                    "type": "toggle",
+                    "text": "$JunkIt_NotifyOnMarkUnmark",
+                    "help": "$JunkIt_NotifyOnMarkUnmark_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": true
+                    }
+                },
+                {
+                    "id": "bNotifyOnJunkTransfer:MiscSettings",
+                    "type": "toggle",
+                    "text": "$JunkIt_NotifyOnJunkTransfer",
+                    "help": "$JunkIt_NotifyOnJunkTransfer_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": true
+                    }
+                },
+                {
+                    "id": "bNotifyOnJunkSell:MiscSettings",
+                    "type": "toggle",
+                    "text": "$JunkIt_NotifyOnJunkSell",
+                    "help": "$JunkIt_NotifyOnJunkSell_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": true
+                    }
+                },
+                {
+                    "id": "bNotifyLargeInventoryLag:MiscSettings",
+                    "type": "toggle",
+                    "text": "$JunkIt_NotifyLargeInventoryLag",
+                    "help": "$JunkIt_NotifyLargeInventoryLag_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": true
+                    }
+                },
+                {
+                    "id": "iWarnInventorySizeThreshold:MiscSettings",
+                    "type": "slider",
+                    "text": "$JunkIt_WarnInventorySizeThreshold",
+                    "help": "$JunkIt_WarnInventorySizeThreshold_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingInt",
+                        "min": 100,
+                        "max": 1000,
+                        "step": 25,
+                        "defaultValue": 500
+                    }
+                },
+                {
+                    "type": "header",
                     "text": "$JunkIt_UtilityHeader"
                 },
                 {
