@@ -9,6 +9,8 @@ FormList Property UnjunkedList Auto
 
 GlobalVariable Property MarkJunkKey Auto
 GlobalVariable Property TransferJunkKey Auto
+GlobalVariable Property GamepadJunkKey Auto
+GlobalVariable Property GamepadTransferHoldTime Auto
 
 GlobalVariable Property ConfirmTransfer Auto
 GlobalVariable Property ConfirmSell Auto
@@ -27,6 +29,7 @@ GlobalVariable Property NotifyLargeInventoryLag Auto
 
 GlobalVariable Property AutoLoadJunkListFromFile Auto
 GlobalVariable Property AutoSaveJunkListToFile Auto
+GlobalVariable Property ReplaceJunkListOnLoad Auto
 
 Message Property TransferConfirmationMsg Auto
 Message Property RetrievalConfirmationMsg Auto
@@ -192,6 +195,10 @@ Event OnConfigInit()
         RegisterForKey(UserTransferKey)
     EndIf
 
+    If GamepadJunkKey.GetValue() != -1
+        RegisterForKey(GamepadJunkKey.GetValue() as Int)
+    EndIf
+
     If (AutoLoadJunkListFromFile.GetValue() == 1)
         TriggerLoadJunkListFromFile()
     EndIf
@@ -216,6 +223,13 @@ Event OnSettingChange(String a_ID)
         RegisterForKey(UserTransferKey)
         TransferJunkKey.SetValue(UserTransferKey as Float)
         RefreshMenu()
+    ElseIf a_ID == "iGamepadJunkKey:Hotkey"
+        UnregisterForKey(GamepadJunkKey.GetValue() as Int)
+        GamepadJunkKey.SetValue(GetModSettingInt(a_ID) as Float)
+        RegisterForKey(GetModSettingInt(a_ID))
+        RefreshMenu()
+    ElseIf a_ID == "iGamepadTransferHoldTime:Hotkey"
+        GamepadTransferHoldTime.SetValue(GetModSettingInt(a_ID) as Float)
     
     ; Confirmation Settings
     ElseIf a_ID == "bConfirmTransfer:Confirmation"
@@ -254,6 +268,8 @@ Event OnSettingChange(String a_ID)
         AutoLoadJunkListFromFile.SetValue(GetModSettingBool(a_ID) as Float)
     ElseIf a_ID == "bAutoSaveJunkListToFile:Maintenance"
         AutoSaveJunkListToFile.SetValue(GetModSettingBool(a_ID) as Float)
+    ElseIf a_ID == "bReplaceJunkListOnLoad:Utility"
+        ReplaceJunkListOnLoad.SetValue(GetModSettingBool(a_ID) as Float)
     
     EndIf
 
@@ -266,17 +282,10 @@ EndEvent
 ; @returns  None
 Function Default()
     ; Hotkey Settings
-    UnregisterForKey(UserJunkKey)
     SetModSettingInt("iJunkKey:Hotkey", 50)
-    UserJunkKey = 50
-    MarkJunkKey.SetValue(50)
-    RegisterForKey(UserJunkKey)
-
-    UnregisterForKey(UserTransferKey)
     SetModSettingInt("iTransferJunkKey:Hotkey", 49)
-    UserTransferKey = 49
-    TransferJunkKey.SetValue(49)
-    RegisterForKey(UserTransferKey)
+    SetModSettingInt("iGamepadJunkKey:Hotkey", 270)
+    SetModSettingInt("iGamepadTransferHoldTime:Hotkey", 1)
 
     ; Confirmation Settings
     SetModSettingBool("bConfirmTransfer:Confirmation", True)
@@ -307,6 +316,7 @@ Function Default()
     VerboseMessage("Settings reset!", True)
     SetModSettingBool("bAutoSaveJunkListToFile:Maintenance", False)
     SetModSettingBool("bAutoLoadJunkListFromFile:Maintenance", False)
+    SetModSettingBool("bReplaceJunkListOnLoad:Utility", False)
     
     Load()
 EndFunction
@@ -326,6 +336,13 @@ Function Load()
     UserTransferKey = GetModSettingInt("iTransferJunkKey:Hotkey")
     TransferJunkKey.SetValue(UserTransferKey as Float)
     RegisterForKey(UserTransferKey)
+
+    ; Gamepad Hotkey Settings
+    UnregisterForKey(GamepadJunkKey.GetValue() as Int)
+    GamepadJunkKey.SetValue(GetModSettingInt("iGamepadJunkKey:Hotkey") as Float)
+    RegisterForKey(GetModSettingInt("iGamepadJunkKey:Hotkey"))
+
+    GamepadTransferHoldTime.SetValue(GetModSettingInt("iGamepadTransferHoldTime:Hotkey") as Float)
 
     ; Confirmation Settings
     ConfirmTransfer.SetValue(GetModSettingBool("bConfirmTransfer:Confirmation") as Float)
@@ -350,6 +367,7 @@ Function Load()
     ; Maintenance Settings
     AutoLoadJunkListFromFile.SetValue(GetModSettingBool("bAutoLoadJunkListFromFile:Maintenance") as Float)
     AutoSaveJunkListToFile.SetValue(GetModSettingBool("bAutoSaveJunkListToFile:Maintenance") as Float)
+    ReplaceJunkListOnLoad.SetValue(GetModSettingBool("bReplaceJunkListOnLoad:Utility") as Float)
 
     RefreshDllSettings()
     VerboseMessage("Settings applied!", True)
@@ -376,6 +394,8 @@ Function MigrateToMCMHelper()
     ; Hotkey Settings
     SetModSettingInt("iJunkKey:Hotkey", MarkJunkKey.GetValue() as Int)
     SetModSettingInt("iTransferJunkKey:Hotkey", TransferJunkKey.GetValue() as Int)
+    SetModSettingInt("iGamepadJunkKey:Hotkey", GamepadJunkKey.GetValue() as Int)
+    SetModSettingInt("iGamepadTransferHoldTime:Hotkey", GamepadTransferHoldTime.GetValue() as Int)
 
     ; Confirmation Settings
     SetModSettingBool("bConfirmTransfer:Confirmation", ConfirmTransfer.GetValue() as Bool)
@@ -400,6 +420,7 @@ Function MigrateToMCMHelper()
     ; Maintenance Settings
     SetModSettingBool("bAutoLoadJunkListFromFile:Maintenance", AutoLoadJunkListFromFile.GetValue() as Bool)
     SetModSettingBool("bAutoSaveJunkListToFile:Maintenance", AutoSaveJunkListToFile.GetValue() as Bool)
+    SetModSettingBool("bReplaceJunkListOnLoad:Utility", ReplaceJunkListOnLoad.GetValue() as Bool)
 
 EndFunction
 
@@ -463,36 +484,43 @@ Function TriggerLoadJunkListFromFile()
     SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_LoadingJunkList")
     RefreshMenu()
 
+    Int i = 0
+    Int iTotal = 0
     FormList NewJunkList = LoadJunkListFromFile()
 
-    ; Revert the current junk list and add any forms to the unjunked list
-    Int i = 0
-    Int iTotal = JunkList.GetSize()
-    While i < iTotal
-        Form item = JunkList.GetAt(i)
+    If ReplaceJunkListOnLoad.GetValue() > 0
+        ; Reset the current junk list and add any forms that were removed that aren't in the imported list to the unjunked list
+        i = 0
+        iTotal = JunkList.GetSize()
+        While i < iTotal
+            Form item = JunkList.GetAt(i)
 
-        If !NewJunkList.HasForm(item) && !UnjunkedList.HasForm(item)
-            ; Track Unjunked item if it is not in the new list
-            UnjunkedList.AddForm(item)
-        ElseIf UnjunkedList.HasForm(item)
-            ; If it is in the new list, and is currently unjunked, remove it from the unjunked list
-            UnjunkedList.RemoveAddedForm(item)
-        EndIf
+            If !NewJunkList.HasForm(item) && !UnjunkedList.HasForm(item)
+                ; Track Unjunked item if it is not in the new list
+                UnjunkedList.AddForm(item)
+            ElseIf UnjunkedList.HasForm(item)
+                ; If it is in the new list, and is currently unjunked, remove it from the unjunked list
+                UnjunkedList.RemoveAddedForm(item)
+            EndIf
 
-        i += 1
-    EndWhile
+            i += 1
+        EndWhile
 
-    JunkList.Revert()
+        JunkList.Revert()
+    EndIf
 
-    ; Now iterate through the new List and update the JunkList
+    ; Now iterate through the new List and adjust the JunkList and UnjunkedList accordingly
     i = 0
     iTotal = NewJunkList.GetSize()
     While i < iTotal
         Form item = NewJunkList.GetAt(i)
 
-        JunkList.AddForm(item)
-
-        ; Ensure that any forms in the new list are removed from the unjunked list
+        ; Add form to junk list if it isn't already there
+        If !JunkList.HasForm(item)
+            JunkList.AddForm(item)
+        EndIf
+        
+        ; Ensure that any forms in the new list are removed from the unjunked list if they were previously unjunked
         If UnjunkedList.HasForm(item)
             UnjunkedList.RemoveAddedForm(item)
         EndIf
@@ -500,12 +528,17 @@ Function TriggerLoadJunkListFromFile()
         i += 1
     EndWhile
 
-    ; Once our junk lists are updated, we can update the keywords on the items
+    ; Once our junk lists are updated, we can process the keywords on the items
     UpdateItemKeywords()
 
-    VerboseMessage("Junk List loaded!", True)
-
-    SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_JunkLoaded")
+    If (ReplaceJunkListOnLoad.GetValue() == 0)
+        VerboseMessage("Junk List loaded!", True)
+        SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_JunkLoaded")
+    Else
+        VerboseMessage("Junk List replaced!", True)
+        SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_JunkReplaced")
+    EndIf
+    
     RefreshMenu()
 EndFunction
 
@@ -549,11 +582,39 @@ Event OnMenuClose(String MenuName)
     GotoState("busy")
 EndEvent
 
+; OnKeyUp
+; Handles gamepad key operations for the hotkey and performs the appropriate action based on the active menu and key hold time.
+; @note purposely did not use `Game.UsingGamepad()` for those using the SKSE plugin to dynamically switch input modes, 
+;       the hotkey should be enough to determine if the gamepad is being used or not.
+;
+; @param KeyCode Int  the key code
+; @param HoldTime Float  the hold time
+; @returns  None
+Event OnKeyUp(Int KeyCode, Float HoldTime)
+    If UIFrozen
+        VerboseMessage("Forced Thaw of UI")
+        UnlockItemListUI(false)
+    EndIf
+
+    If ActiveMenu != "" && !UI.IsTextInputEnabled() && KeyCode == (GamepadJunkKey.GetValue() as Int)
+        GotoState("busy")
+        If HoldTime < GamepadTransferHoldTime.GetValue()
+            ToggleIsJunk()
+        Else
+            If ActiveMenu == "ContainerMenu"
+                TransferJunk()
+            ElseIf ActiveMenu == "BarterMenu"
+                SellJunk()
+            EndIf
+        EndIf
+        GotoState("")
+    EndIf
+EndEvent
+
 ; OnKeyDown
 ; Listens for the hotkey and performs the appropriate action based on the active menu.
 ;
 ; @param KeyCode Int  the key code
-; @param HoldTime Float  the hold time
 ; @returns  None
 Event OnKeyDown(Int KeyCode)
     If UIFrozen
@@ -579,11 +640,19 @@ Event OnKeyDown(Int KeyCode)
 EndEvent
 
 State busy
-    ; OnKeyDown
+    ; OnKeyUp
     ; Disables event during busy state
     ;
     ; @param KeyCode Int  the key code
     ; @param HoldTime Float  the hold time
+    ; @returns  None
+    Event OnKeyUp(Int KeyCode, Float HoldTime)
+    EndEvent
+    
+    ; OnKeyDown
+    ; Disables event during busy state
+    ;
+    ; @param KeyCode Int  the key code
     ; @returns  None
     Event OnKeyDown(Int KeyCode)
     EndEvent
@@ -1102,11 +1171,6 @@ EndFunction
 ;
 ; @returns  None
 Function LockItemListUI()
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableInput", true)
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableSelection", true)
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", true)
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.suspended", true)
-    
     UIFrozen = True
     FreezeItemListUI()
 
@@ -1120,11 +1184,6 @@ EndFunction
 ; @param bUpdateUI Bool  whether to update the UI icons
 ; @returns  None
 Function UnlockItemListUI(bool bUpdateUI = true)
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableInput", false)
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableSelection", false)
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", false)
-    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.suspended", false)
-    
     UIFrozen = False
     ThawItemListUI()
 

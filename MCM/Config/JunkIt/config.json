@@ -137,6 +137,33 @@
                 },
                 {
                     "type": "header",
+                    "text": "$JunkIt_GamepadHotkeyHeader"
+                },
+                {
+                    "id": "iGamepadJunkKey:Hotkey",
+                    "type": "keymap",
+                    "text": "$JunkIt_GamepadJunkKey",
+                    "help": "$JunkIt_GamepadJunkKey_Help",
+                    "ignoreConflicts": true,
+                    "valueOptions": {
+                        "sourceType": "ModSettingInt"
+                    }
+                },
+                {
+                    "id": "iGamepadTransferHoldTime:Hotkey",
+                    "type": "slider",
+                    "text": "$JunkIt_GamepadTransferHoldTime",
+                    "help": "$JunkIt_GamepadTransferHoldTime_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingInt",
+                        "min": 1,
+                        "max": 30,
+                        "step": 1,
+                        "defaultValue": 1
+                    }
+                },
+                {
+                    "type": "header",
                     "text": "$JunkIt_MiscSettingsHeader"
                 },
                 {
@@ -217,46 +244,6 @@
                     "text": "$JunkIt_JunkList_ListHeader"
                 },
                 {
-                    "id": "sJunkItem1:JunkList",
-                    "type": "text",
-                    "text": "",
-                    "help": "$JunkIt_JunkListItem_Help",
-                    "valueOptions": {
-                        "defaultValue": "Item 1",
-                        "value": "Item 1"
-                    }
-                },
-                {
-                    "id": "sJunkItem2:JunkList",
-                    "type": "text",
-                    "text": "",
-                    "help": "$JunkIt_JunkListItem_Help",
-                    "valueOptions": {
-                        "defaultValue": "Item 2",
-                        "value": "Item 2"
-                    }
-                },
-                {
-                    "id": "sJunkItem3:JunkList",
-                    "type": "text",
-                    "text": "",
-                    "help": "$JunkIt_JunkListItem_Help",
-                    "valueOptions": {
-                        "defaultValue": "Item 3",
-                        "value": "Item 3"
-                    }
-                },
-                {
-                    "id": "sJunkItem4:JunkList",
-                    "type": "text",
-                    "text": "",
-                    "help": "$JunkIt_JunkListItem_Help",
-                    "valueOptions": {
-                        "defaultValue": "Item 4",
-                        "value": "Item 4"
-                    }
-                },
-                {
                     "id": "sJunkListNext:JunkList",
                     "type": "text",
                     "text": "",
@@ -272,59 +259,6 @@
                     "valueOptions": {
                         "defaultValue": "Previous Page",
                         "value": "Previous Page"
-                    }
-                },
-                {
-                    "type": "header",
-                    "text": "$JunkIt_JunkList_UtilityHeader",
-                    "position": 1
-                },
-                {
-                    "id": "sSaveJunkListToFile:Utility",
-                    "type": "text",
-                    "text": "",
-                    "help": "$JunkIt_SaveJunkListToFile_Help",
-                    "valueOptions": {
-                        "sourceType": "ModSettingString",
-                        "defaultValue": "$JunkIt_SaveJunkListToFile",
-                        "value": "$JunkIt_SaveJunkListToFile"
-                    },
-                    "action": {
-                        "type": "CallFunction",
-                        "function": "TriggerSaveJunkListToFile"
-                    }
-                },
-                {
-                    "id": "sLoadJunkListFromFile:Utility",
-                    "type": "text",
-                    "text": "",
-                    "help": "$JunkIt_LoadJunkListFromFile_Help",
-                    "valueOptions": {
-                        "sourceType": "ModSettingString",
-                        "defaultValue": "$JunkIt_LoadJunkListFromFile",
-                        "value": "$JunkIt_LoadJunkListFromFile"
-                    },
-                    "action": {
-                        "type": "CallFunction",
-                        "function": "TriggerLoadJunkListFromFile"
-                    }
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "id": "sResetJunk:Utility",
-                    "type": "text",
-                    "text": "",
-                    "help": "$JunkIt_ResetJunk_Help",
-                    "valueOptions": {
-                        "sourceType": "ModSettingString",
-                        "defaultValue": "$JunkIt_ResetJunk",
-                        "value": "$JunkIt_ResetJunk"
-                    },
-                    "action": {
-                        "type": "CallFunction",
-                        "function": "ResetJunk"
                     }
                 }
             ]
@@ -432,6 +366,68 @@
                     "valueOptions": {
                         "sourceType": "ModSettingBool",
                         "defaultValue": false
+                    }
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_JunkList_UtilityHeader"
+                },
+                {
+                    "id": "sSaveJunkListToFile:Utility",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_SaveJunkListToFile_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": "$JunkIt_SaveJunkListToFile",
+                        "value": "$JunkIt_SaveJunkListToFile"
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "TriggerSaveJunkListToFile"
+                    }
+                },
+                {
+                    "id": "sLoadJunkListFromFile:Utility",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_LoadJunkListFromFile_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": "$JunkIt_LoadJunkListFromFile",
+                        "value": "$JunkIt_LoadJunkListFromFile"
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "TriggerLoadJunkListFromFile"
+                    }
+                },
+                {
+                    "id": "bReplaceJunkListOnLoad:Utility",
+                    "type": "toggle",
+                    "text": "$JunkIt_ReplaceJunkListOnLoad",
+                    "help": "$JunkIt_ReplaceJunkListOnLoad_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "id": "sResetJunk:Utility",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_ResetJunk_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": "$JunkIt_ResetJunk",
+                        "value": "$JunkIt_ResetJunk"
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "ResetJunk"
                     }
                 }
             ]
