@@ -111,6 +111,7 @@ Event OnUpdate()
     If UIFrozen
         VerboseMessage("Forced Thaw of UI")
         UnlockItemListUI()
+        GotoState("")
     EndIf
 EndEvent
 
@@ -557,7 +558,7 @@ EndEvent
 Event OnKeyDown(Int KeyCode)
     If UIFrozen
         VerboseMessage("Forced Thaw of UI")
-        UnlockItemListUI()
+        UnlockItemListUI(false)
     EndIf
 
     If ActiveMenu != "" && !UI.IsTextInputEnabled()
@@ -585,10 +586,6 @@ State busy
     ; @param HoldTime Float  the hold time
     ; @returns  None
     Event OnKeyDown(Int KeyCode)
-        If UIFrozen
-            VerboseMessage("Forced Thaw of UI")
-            UnlockItemListUI()
-        EndIf
     EndEvent
 EndState
 
@@ -1113,8 +1110,8 @@ Function LockItemListUI()
     UIFrozen = True
     FreezeItemListUI()
 
-    ; If the UI is still locked after 10 seconds, force thaw it
-    RegisterForSingleUpdate(10.0)
+    ; If the UI is still locked after 5 seconds, force thaw it
+    RegisterForSingleUpdate(5.0)
 EndFunction
 
 ; UnlockItemListUI
