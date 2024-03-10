@@ -205,9 +205,109 @@
                         "sourceType": "ModSettingBool",
                         "defaultValue": false
                     }
+                }
+            ]
+        },
+        {
+            "pageDisplayName": "$JunkIt_JunkList_Page",
+            "cursorFillMode": "topToBottom",
+            "content": [
+                {
+                    "type": "header",
+                    "text": "$JunkIt_JunkList_ListHeader"
                 },
                 {
-                    "type": "empty"
+                    "id": "sJunkItem1:JunkList",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_JunkListItem_Help",
+                    "valueOptions": {
+                        "defaultValue": "Item 1",
+                        "value": "Item 1"
+                    }
+                },
+                {
+                    "id": "sJunkItem2:JunkList",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_JunkListItem_Help",
+                    "valueOptions": {
+                        "defaultValue": "Item 2",
+                        "value": "Item 2"
+                    }
+                },
+                {
+                    "id": "sJunkItem3:JunkList",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_JunkListItem_Help",
+                    "valueOptions": {
+                        "defaultValue": "Item 3",
+                        "value": "Item 3"
+                    }
+                },
+                {
+                    "id": "sJunkItem4:JunkList",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_JunkListItem_Help",
+                    "valueOptions": {
+                        "defaultValue": "Item 4",
+                        "value": "Item 4"
+                    }
+                },
+                {
+                    "id": "sJunkListNext:JunkList",
+                    "type": "text",
+                    "text": "",
+                    "valueOptions": {
+                        "defaultValue": "Next Page",
+                        "value": "Next Page"
+                    }
+                },
+                {
+                    "id": "sJunkListNext:JunkList",
+                    "type": "text",
+                    "text": "",
+                    "valueOptions": {
+                        "defaultValue": "Previous Page",
+                        "value": "Previous Page"
+                    }
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_JunkList_UtilityHeader",
+                    "position": 1
+                },
+                {
+                    "id": "sSaveJunkListToFile:Utility",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_SaveJunkListToFile_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": "$JunkIt_SaveJunkListToFile",
+                        "value": "$JunkIt_SaveJunkListToFile"
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "TriggerSaveJunkListToFile"
+                    }
+                },
+                {
+                    "id": "sLoadJunkListFromFile:Utility",
+                    "type": "text",
+                    "text": "",
+                    "help": "$JunkIt_LoadJunkListFromFile_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingString",
+                        "defaultValue": "$JunkIt_LoadJunkListFromFile",
+                        "value": "$JunkIt_LoadJunkListFromFile"
+                    },
+                    "action": {
+                        "type": "CallFunction",
+                        "function": "TriggerLoadJunkListFromFile"
+                    }
                 },
                 {
                     "type": "empty"
@@ -304,6 +404,31 @@
                     "type": "toggle",
                     "text": "$Verbose",
                     "help": "$VerboseMaintenance_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
+                },
+                {
+                    "type": "header",
+                    "text": "$AutoloadJunkList_Header",
+                    "position": 1
+                },
+                {
+                    "id": "bAutoLoadJunkListFromFile:Maintenance",
+                    "type": "toggle",
+                    "text": "$JunkIt_AutoLoadJunkListFromFile",
+                    "help": "$JunkIt_AutoLoadJunkListFromFile_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
+                },
+                {
+                    "id": "bAutoSaveJunkListToFile:Maintenance",
+                    "type": "toggle",
+                    "text": "$JunkIt_AutoSaveJunkListToFile",
+                    "help": "$JunkIt_AutoSaveJunkListToFile_Help",
                     "valueOptions": {
                         "sourceType": "ModSettingBool",
                         "defaultValue": false

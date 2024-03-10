@@ -25,6 +25,9 @@ GlobalVariable Property NotifyOnJunkTransfer Auto
 GlobalVariable Property NotifyOnJunkSell Auto
 GlobalVariable Property NotifyLargeInventoryLag Auto
 
+GlobalVariable Property AutoLoadJunkListFromFile Auto
+GlobalVariable Property AutoSaveJunkListToFile Auto
+
 Message Property TransferConfirmationMsg Auto
 Message Property RetrievalConfirmationMsg Auto
 Message Property SellConfirmationMsg Auto
@@ -37,6 +40,8 @@ Int UserJunkKey = 50
 Int UserTransferKey = 49
 
 Int WarnInventorySizeThreshold = 500
+
+Bool UIFrozen = False
 
 ;--- JunkIt Private Variables -------------------------------------------------------
 
@@ -64,6 +69,10 @@ Int Function GetMenuItemValue(Form a_form) global native
 
 FormList Function GetTransferFormList() global native
 FormList Function GetSellFormList() global native
+
+Function SaveJunkListToFile() global native
+FormList Function LoadJunkListFromFile() global native
+Function UpdateItemKeywords() global native
 
 ; --- MCM Helper Functions ----------------------------------------------------------
 
@@ -98,6 +107,11 @@ Event OnUpdate()
         migrated = True
         VerboseMessage("OnUpdate: Settings imported!", True)
     EndIf
+
+    If UIFrozen
+        VerboseMessage("Forced Thaw of UI")
+        UnlockItemListUI()
+    EndIf
 EndEvent
 
 ; OnGameReload
@@ -111,16 +125,12 @@ Event OnGameReload()
         migrated = True
         VerboseMessage("OnGameReload: Settings imported!", True)
     EndIf
-    If GetModSettingBool("bLoadSettingsonReload:Maintenance")
-        LoadSettings()
-        VerboseMessage("OnGameReload: Settings autoloaded!", True)
-    EndIf
+    ;If GetModSettingBool("bLoadSettingsonReload:Maintenance")
+    ;    LoadSettings()
+    ;    VerboseMessage("OnGameReload: Settings autoloaded!", True)
+    ;EndIf
 
     LoadSettings()
-
-    ; -BugFix- Corrects false positive junk keywords on load
-    ;JunkList = CorrectJunkListKeywords(JunkList, True)
-    ;UnjunkedList = CorrectJunkListKeywords(UnjunkedList, False)
 EndEvent
 
 ; OnPlayerLoadGame
@@ -128,10 +138,6 @@ EndEvent
 ;
 ; @returns  None
 Event OnPlayerLoadGame()
-    ; -BugFix- Corrects false positive junk keywords on load
-    ;JunkList = CorrectJunkListKeywords(JunkList, True)
-    ;UnjunkedList = CorrectJunkListKeywords(UnjunkedList, False)
-
     VerboseMessage("OnPlayerLoadGame: Applying keyword corrections")
 endEvent
 
@@ -143,6 +149,8 @@ endEvent
 Event OnPageSelect(String a_page)
     parent.OnPageSelect(a_page)
     SetModSettingString("sResetJunk:Utility", "$JunkIt_ResetJunk")
+    SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_LoadJunkListFromFile")
+    SetModSettingString("sSaveJunkListToFile:Utility", "$JunkIt_SaveJunkListToFile")
     RefreshMenu()
 EndEvent
 
@@ -181,6 +189,10 @@ Event OnConfigInit()
 
     If UserTransferKey != -1
         RegisterForKey(UserTransferKey)
+    EndIf
+
+    If (AutoLoadJunkListFromFile.GetValue() == 1)
+        TriggerLoadJunkListFromFile()
     EndIf
 EndEvent
 
@@ -235,6 +247,12 @@ Event OnSettingChange(String a_ID)
         NotifyLargeInventoryLag.SetValue(GetModSettingBool(a_ID) as Float)
     ElseIf a_ID == "iWarnInventorySizeThreshold:MiscSettings"
         WarnInventorySizeThreshold = GetModSettingInt(a_ID)
+
+    ; Export / Import Settings
+    ElseIf a_ID == "bAutoLoadJunkListFromFile:Maintenance"
+        AutoLoadJunkListFromFile.SetValue(GetModSettingBool(a_ID) as Float)
+    ElseIf a_ID == "bAutoSaveJunkListToFile:Maintenance"
+        AutoSaveJunkListToFile.SetValue(GetModSettingBool(a_ID) as Float)
     
     EndIf
 
@@ -286,6 +304,9 @@ Function Default()
     SetModSettingBool("bLoadSettingsonReload:Maintenance", False)
     SetModSettingBool("bVerbose:Maintenance", False)
     VerboseMessage("Settings reset!", True)
+    SetModSettingBool("bAutoSaveJunkListToFile:Maintenance", False)
+    SetModSettingBool("bAutoLoadJunkListFromFile:Maintenance", False)
+    
     Load()
 EndFunction
 
@@ -324,6 +345,10 @@ Function Load()
     NotifyOnJunkSell.SetValue(GetModSettingBool("bNotifyOnJunkSell:MiscSettings") as Float)
     NotifyLargeInventoryLag.SetValue(GetModSettingBool("bNotifyLargeInventoryLag:MiscSettings") as Float)
     WarnInventorySizeThreshold = GetModSettingInt("iWarnInventorySizeThreshold:MiscSettings")
+
+    ; Maintenance Settings
+    AutoLoadJunkListFromFile.SetValue(GetModSettingBool("bAutoLoadJunkListFromFile:Maintenance") as Float)
+    AutoSaveJunkListToFile.SetValue(GetModSettingBool("bAutoSaveJunkListToFile:Maintenance") as Float)
 
     RefreshDllSettings()
     VerboseMessage("Settings applied!", True)
@@ -370,6 +395,11 @@ Function MigrateToMCMHelper()
     SetModSettingBool("bNotifyOnJunkSell:MiscSettings", NotifyOnJunkSell.GetValue() as Bool)
     SetModSettingBool("bNotifyLargeInventoryLag:MiscSettings", NotifyLargeInventoryLag.GetValue() as Bool)
     SetModSettingInt("iWarnInventorySizeThreshold:MiscSettings", WarnInventorySizeThreshold)
+
+    ; Maintenance Settings
+    SetModSettingBool("bAutoLoadJunkListFromFile:Maintenance", AutoLoadJunkListFromFile.GetValue() as Bool)
+    SetModSettingBool("bAutoSaveJunkListToFile:Maintenance", AutoSaveJunkListToFile.GetValue() as Bool)
+
 EndFunction
 
 ; ResetJunk
@@ -401,9 +431,80 @@ Function ResetJunk()
     JunkList.Revert()
     VerboseMessage("Junk List reset!", True)
     VerboseMessage("Junk List size after reset: " + JunkList.GetSize())
-    Debug.MessageBox("Junk List reset!")
 
     SetModSettingString("sResetJunk:Utility", "$JunkIt_JunkReset")
+    RefreshMenu()
+EndFunction
+
+; TriggerSaveJunkListToFile
+; Triggers the save junk list to file function
+;
+; @returns  None
+Function TriggerSaveJunkListToFile()
+    VerboseMessage("Saving Junk List To File...")
+    SetModSettingString("sSaveJunkListToFile:Utility", "$JunkIt_SavingJunkList")
+    RefreshMenu()
+
+    SaveJunkListToFile()
+
+    VerboseMessage("Junk List saved!", True)
+
+    SetModSettingString("sSaveJunkListToFile:Utility", "$JunkIt_JunkSaved")
+    RefreshMenu()
+EndFunction
+
+; TriggerLoadJunkListFromFile
+; Triggers the load junk list from file function
+;
+; @returns  None
+Function TriggerLoadJunkListFromFile()
+    VerboseMessage("Loading Junk List From File...")
+    SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_LoadingJunkList")
+    RefreshMenu()
+
+    FormList NewJunkList = LoadJunkListFromFile()
+
+    ; Revert the current junk list and add any forms to the unjunked list
+    Int i = 0
+    Int iTotal = JunkList.GetSize()
+    While i < iTotal
+        Form item = JunkList.GetAt(i)
+
+        If !NewJunkList.HasForm(item) && !UnjunkedList.HasForm(item)
+            ; Track Unjunked item if it is not in the new list
+            UnjunkedList.AddForm(item)
+        ElseIf UnjunkedList.HasForm(item)
+            ; If it is in the new list, and is currently unjunked, remove it from the unjunked list
+            UnjunkedList.RemoveAddedForm(item)
+        EndIf
+
+        i += 1
+    EndWhile
+
+    JunkList.Revert()
+
+    ; Now iterate through the new List and update the JunkList
+    i = 0
+    iTotal = NewJunkList.GetSize()
+    While i < iTotal
+        Form item = NewJunkList.GetAt(i)
+
+        JunkList.AddForm(item)
+
+        ; Ensure that any forms in the new list are removed from the unjunked list
+        If UnjunkedList.HasForm(item)
+            UnjunkedList.RemoveAddedForm(item)
+        EndIf
+
+        i += 1
+    EndWhile
+
+    ; Once our junk lists are updated, we can update the keywords on the items
+    UpdateItemKeywords()
+
+    VerboseMessage("Junk List loaded!", True)
+
+    SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_JunkLoaded")
     RefreshMenu()
 EndFunction
 
@@ -454,6 +555,11 @@ EndEvent
 ; @param HoldTime Float  the hold time
 ; @returns  None
 Event OnKeyDown(Int KeyCode)
+    If UIFrozen
+        VerboseMessage("Forced Thaw of UI")
+        UnlockItemListUI()
+    EndIf
+
     If ActiveMenu != "" && !UI.IsTextInputEnabled()
         GotoState("busy")
         If KeyCode == UserJunkKey
@@ -479,6 +585,10 @@ State busy
     ; @param HoldTime Float  the hold time
     ; @returns  None
     Event OnKeyDown(Int KeyCode)
+        If UIFrozen
+            VerboseMessage("Forced Thaw of UI")
+            UnlockItemListUI()
+        EndIf
     EndEvent
 EndState
 
@@ -489,33 +599,12 @@ EndState
 Function ToggleIsJunk()
     Form item = ToggleSelectedAsJunk()
 
-    If !item
-        VerboseMessage("No item selected!")
-        Debug.Notification("JunkIt - No item selected!")
-        Return
-    EndIf
-
-    ; Update formlists post junk toggle
-    If item.HasKeyword(IsJunkKYWD)
+    ; Process the Results
+    If item && item.HasKeyword(IsJunkKYWD)
         MarkAsJunk(item)
-    Else
+    ElseIf item
         UnmarkAsJunk(item)
-    Endif
-
-    ; Get the selected item in the Item Menu
-    ;Int selectedFormId = UI.GetInt(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId")
-    ;If !selectedFormId
-    ;    VerboseMessage("No item selected!")
-    ;    Debug.Notification("JunkIt - No item selected!")
-    ;    Return
-    ;EndIf
-    ;Form selected_item = Game.GetFormEx(selectedFormId)
-
-    ;If !selected_item.HasKeyword(IsJunkKYWD)
-    ;    MarkAsJunk(selected_item)
-    ;Else
-    ;    UnmarkAsJunk(selected_item)
-    ;EndIf
+    EndIf
 EndFunction
 
 ; MarkAsJunk
@@ -524,14 +613,6 @@ EndFunction
 ; @param item Form  the item to mark as junk
 ; @returns  None
 Function MarkAsJunk(Form item)
-    ;Bool success = AddJunkKeyword(item) as Bool
-    
-    ;If !success
-    ;    VerboseMessage("Failed to mark " + item.GetName() + " as junk")
-    ;    Debug.MessageBox("JunkIt - Failed to mark " + item.GetName() + " as junk")
-    ;    Return
-    ;EndIf
-
     VerboseMessage("Form: " + item.GetName() + " has been marked as junk")
     If NotifyOnMarkUnmark.GetValue() >= 1
         Debug.Notification("JunkIt - " + item.GetName() + " has been marked as junk")
@@ -546,9 +627,6 @@ Function MarkAsJunk(Form item)
     If UnjunkedList.HasForm(item)
         UnjunkedList.RemoveAddedForm(item)
     EndIf
-
-    ;Utility.wait(1.0)
-    ;RefreshUIIcons()
 EndFunction
 
 ; UnmarkAsJunk
@@ -557,15 +635,6 @@ EndFunction
 ; @param item Form  the item to unmark as junk
 ; @returns  None
 Function UnmarkAsJunk(Form item)
-    ; Bool success = RemoveJunkKeyword(item) as Bool
-    
-    ;If !success
-    ;    VerboseMessage("Failed to unmark " + item.GetName() + " as junk")
-    ;    Debug.MessageBox("JunkIt - Failed to unmark " + item.GetName() + " as junk")
-    ;    ;RefreshUIIcons()
-    ;    Return
-    ;EndIf
-
     VerboseMessage("Form: " + item.GetName() + " is no longer marked as junk")
     If NotifyOnMarkUnmark.GetValue() >= 1
         Debug.Notification("JunkIt - " + item.GetName() + " is no longer marked as junk")
@@ -580,9 +649,6 @@ Function UnmarkAsJunk(Form item)
     If !UnjunkedList.HasForm(item)
         UnjunkedList.AddForm(item)
     EndIf
-
-    ;Utility.wait(1.0)
-    ;RefreshUIIcons()
 EndFunction
 
 ; TransferJunk
@@ -626,6 +692,7 @@ Function TransferJunk()
             If(iConfChoice == 0) ;Yes
                 canRetrieve = TRUE
             ElseIf(iConfChoice == 1) ;No
+                canRetrieve = FALSE
                 Return
             EndIf
         Else
@@ -644,6 +711,7 @@ Function TransferJunk()
             If(iConfChoice == 0) ;Yes
                 canTransfer = TRUE
             ElseIf(iConfChoice == 1) ;No
+                canTransfer = FALSE
                 Return
             EndIf
         Else
@@ -654,6 +722,10 @@ Function TransferJunk()
     If canRetrieve == TRUE
         ; Check for large inventories and warn that they could take longer to process
         WarnLargeInventory(PlayerREF, transferContainer)
+
+        If NotifyOnJunkTransfer.GetValue() >= 1
+            Debug.Notification("JunkIt - Processing Retrieval...")
+        EndIf
 
         LockItemListUI()
         While transferContainer.GetItemCount(TransferList) > 0
@@ -671,6 +743,10 @@ Function TransferJunk()
     If canTransfer == TRUE
         ; Check for large inventories and warn that they could take longer to process
         WarnLargeInventory(PlayerREF, transferContainer)
+
+        If NotifyOnJunkTransfer.GetValue() >= 1
+            Debug.Notification("JunkIt - Processing Transfer...")
+        EndIf
         
         ; Find out if we're trading with an NPC and account for their carry weight
         If(containerMode == 3) ; NPC Mode
@@ -906,6 +982,13 @@ Function SellJunk()
         EndIf
     EndIf
 
+    ; Check for large inventories and warn that they could take longer to process
+    WarnLargeInventory(PlayerREF, vendorContainer)
+
+    If NotifyOnJunkSell.GetValue() >= 1
+        Debug.Notification("JunkIt - Processing Sale...")
+    EndIf
+
     ; Get payout from vendors on hand gold first then container
     Int goldToGimme = RoundNumber(totalSellValue)
     Int vendorActorGold = vendorActor.GetItemCount(Gold001)
@@ -972,10 +1055,6 @@ Function SellJunk()
     EndIf
 
     UnlockItemListUI()
-
-    ; Wait a moment to allow the transfer operation to fully complete
-    ; Utility.wait(0.5)
-    ; RefreshUIIcons()
 EndFunction
 
 ; --- JunkIt Utilities --------------------------------------------------------------
@@ -1026,12 +1105,16 @@ EndFunction
 ;
 ; @returns  None
 Function LockItemListUI()
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", true)
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", true)
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", true)
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", true)
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableInput", true)
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableSelection", true)
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", true)
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.suspended", true)
+    
+    UIFrozen = True
+    FreezeItemListUI()
 
-    ;FreezeItemListUI()
+    ; If the UI is still locked after 10 seconds, force thaw it
+    RegisterForSingleUpdate(10.0)
 EndFunction
 
 ; UnlockItemListUI
@@ -1040,11 +1123,13 @@ EndFunction
 ; @param bUpdateUI Bool  whether to update the UI icons
 ; @returns  None
 Function UnlockItemListUI(bool bUpdateUI = true)
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableInput", false)
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.disableSelection", false)
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", false)
-    UI.SetBool("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.suspended", false)
-    ; ThawItemListUI()
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableInput", false)
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.disableSelection", false)
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.canSelectDisabled", false)
+    ;UI.SetBool(ActiveMenu, "_root.Menu_mc.inventoryLists.itemList.suspended", false)
+    
+    UIFrozen = False
+    ThawItemListUI()
 
     If bUpdateUI
         Utility.wait(0.5)
