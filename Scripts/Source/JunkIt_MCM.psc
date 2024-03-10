@@ -200,7 +200,9 @@ Event OnConfigInit()
     EndIf
 
     If (AutoLoadJunkListFromFile.GetValue() == 1)
+        Utility.Wait(GetModSettingInt("iLoadingDelay:Maintenance") + 10.0)
         TriggerLoadJunkListFromFile()
+        Debug.Notification("JunkIt - Junk List Auto-Imported!")
     EndIf
 EndEvent
 
