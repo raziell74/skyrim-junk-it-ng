@@ -20,7 +20,7 @@ In addition to marking items as "Junk" there are several new utilities added to 
 
 ## Known Issues
 
-- [ ] Cannot Mark Ammo as "Junk".
+- [x] ~~Cannot Mark Ammo as "Junk".~~
 - [x] ~~Bulk selling junk items does not calculate speech skill increases. I need to also figure out how to maximize compatibility so mods that affect speech skill increases will be compatible with JunkIt.~~
 - [x] ~~Rarely the players carry weight will be set to a very large negative number when transferring loot. I believe this is due to the remove quantity on the form lists being set to a very large amount to ensure all items are transferred regardless of quantity.~~ <span style="color:darkgreen">***Resolved***</span>
 - [x] <span style="color:darkgreen">***Resolved***</span> ~~Occasionally items that were unmarked as junk will revert to using the "Junk" icon on game reload.~~
