@@ -6,6 +6,7 @@ Actor Property PlayerRef Auto
 Keyword Property IsJunkKYWD Auto
 FormList Property JunkList Auto
 FormList Property UnjunkedList Auto
+FormList Property JunkHistory Auto
 
 GlobalVariable Property MarkJunkKey Auto
 GlobalVariable Property TransferJunkKey Auto
@@ -34,6 +35,7 @@ GlobalVariable Property ReplaceJunkListOnLoad Auto
 Message Property TransferConfirmationMsg Auto
 Message Property RetrievalConfirmationMsg Auto
 Message Property SellConfirmationMsg Auto
+Message Property UpdateMessage Auto
 
 MiscObject Property Gold001 Auto
 
@@ -52,6 +54,10 @@ Bool migrated = False
 String plugin = "JunkIt.esp"
 
 String ActiveMenu = ""
+
+Int _page = 0
+Int _totalPages = 0
+Int _itemsPerPage = 40
 
 ; --- JunkIt.dll Native Functions ---------------------------------------------------
 
@@ -84,7 +90,7 @@ Function UpdateItemKeywords() global native
 ;
 ; @returns  Int  the version of the MCM Helper
 Int Function GetVersion()
-    return 1 ;MCM Helper
+    return 2 ;MCM Helper
 EndFunction
 
 ; OnVersionUpdate
@@ -94,8 +100,37 @@ EndFunction
 ; @returns  None
 Event OnVersionUpdate(int aVersion)
 	parent.OnVersionUpdate(aVersion)
-    MigrateToMCMHelper()
-    VerboseMessage("OnVersionUpdate: MCM Updated", True)
+    
+    ; JunkHistory was introduced in Version 1.2.0 ~ This code will run the update to fill out the new formlist
+    ; Check if there is no JunkHistory but there are items in the JunkList or UnjunkedList
+    If JunkHistory.GetSize() == 0 && (JunkList.GetSize() > 0 || UnjunkedList.GetSize() > 0)
+        Utility.Wait(10.0)
+        VerboseMessage("Updating to Version 1.2.0 - Please wait for the update to complete before opening the MCM.", True)
+        ; UpdateMessage.Show(1.20)
+
+        ; iterate through the UnjunkedList and add the items from the junk history list
+        Int i = 0
+        Int iTotal = UnjunkedList.GetSize()
+        While i < iTotal
+            Form item = UnjunkedList.GetAt(i)
+            JunkHistory.AddForm(item)
+            i += 1
+        EndWhile
+
+        ; iterate through the junk list and add the items to the junk history list
+        i = 0
+        iTotal = JunkList.GetSize()
+        While i < iTotal
+            Form item = JunkList.GetAt(i)
+            JunkHistory.AddForm(item)
+            i += 1
+        EndWhile
+
+        Int JunkHistoryCount = JunkHistory.GetSize() 
+        VerboseMessage("JunkIt Version 1.2.0 - Junk History now tracking " + JunkHistoryCount + " items", True)
+    EndIf
+
+    VerboseMessage("MCM Successfully Updated to the latest version", True)
     RefreshMenu()
 EndEvent
 
@@ -145,32 +180,6 @@ Event OnPlayerLoadGame()
     VerboseMessage("OnPlayerLoadGame: Applying keyword corrections")
 endEvent
 
-; OnPageSelect
-; Event called when the player selects a page in the MCM
-;
-; @param a_page String  the name of the page
-; @returns  None
-Event OnPageSelect(String a_page)
-    parent.OnPageSelect(a_page)
-    SetModSettingString("sResetJunk:Utility", "$JunkIt_ResetJunk")
-    SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_LoadJunkListFromFile")
-    SetModSettingString("sSaveJunkListToFile:Utility", "$JunkIt_SaveJunkListToFile")
-    RefreshMenu()
-EndEvent
-
-; OnConfigOpen
-; Called when this config menu is opened.
-;
-; @returns  None
-Event OnConfigOpen()
-    parent.OnConfigOpen()
-    If !migrated
-        MigrateToMCMHelper()
-        migrated = True
-        VerboseMessage("OnConfigOpen: Settings imported!", True)
-    EndIf
-EndEvent
-
 ; OnConfigInit
 ; Called when this config menu is initialized.
 ;
@@ -204,6 +213,43 @@ Event OnConfigInit()
         TriggerLoadJunkListFromFile()
         Debug.Notification("JunkIt - Junk List Auto-Imported!")
     EndIf
+EndEvent
+
+; OnConfigOpen
+; Called when this config menu is opened.
+;
+; @returns  None
+Event OnConfigOpen()
+    parent.OnConfigOpen()
+    If !migrated
+        MigrateToMCMHelper()
+        migrated = True
+        VerboseMessage("OnConfigOpen: Settings imported!", True)
+    EndIf
+EndEvent
+
+; OnPageSelect
+; Event called when the player selects a page in the MCM
+;
+; @param a_page String  the name of the page
+; @returns  None
+Event OnPageSelect(String a_page)
+    parent.OnPageSelect(a_page)
+
+    SetModSettingString("sResetJunk:Utility", "$JunkIt_ResetJunk")
+    SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_LoadJunkListFromFile")
+    SetModSettingString("sSaveJunkListToFile:Utility", "$JunkIt_SaveJunkListToFile")
+    
+    ; Prep the Junk List Page with the first page of items
+    _page = 0
+    _totalPages = (JunkHistory.GetSize() / _itemsPerPage) + 1
+    SetModSettingString("sNextPage:JunkList", "$JunkIt_NextPage")
+    SetModSettingString("sPreviousPage:JunkList", "$JunkIt_PreviousPage")
+    SetModSettingString("sNextPage2:JunkList", "$JunkIt_NextPage")
+    SetModSettingString("sPreviousPage2:JunkList", "$JunkIt_PreviousPage")
+    JunkListPageUpdate()
+
+    RefreshMenu()
 EndEvent
 
 ; OnSettingChange
@@ -287,7 +333,7 @@ Function Default()
     SetModSettingInt("iJunkKey:Hotkey", 50)
     SetModSettingInt("iTransferJunkKey:Hotkey", 49)
     SetModSettingInt("iGamepadJunkKey:Hotkey", 270)
-    SetModSettingInt("iGamepadTransferHoldTime:Hotkey", 1)
+    SetModSettingInt("iGamepadTransferHoldTime:Hotkey", 2)
 
     ; Confirmation Settings
     SetModSettingBool("bConfirmTransfer:Confirmation", True)
@@ -315,11 +361,11 @@ Function Default()
     SetModSettingInt("iLoadingDelay:Maintenance", 0)
     SetModSettingBool("bLoadSettingsonReload:Maintenance", False)
     SetModSettingBool("bVerbose:Maintenance", False)
-    VerboseMessage("Settings reset!", True)
     SetModSettingBool("bAutoSaveJunkListToFile:Maintenance", False)
     SetModSettingBool("bAutoLoadJunkListFromFile:Maintenance", False)
     SetModSettingBool("bReplaceJunkListOnLoad:Utility", False)
     
+    VerboseMessage("Settings reset!", True)
     Load()
 EndFunction
 
@@ -426,6 +472,152 @@ Function MigrateToMCMHelper()
 
 EndFunction
 
+; JunkListPageUpdate
+; Updates the Junk List page with the current items
+;
+; @returns  None
+Function JunkListPageUpdate()
+    Int i = _page * _itemsPerPage
+    Int optionIndex = 0
+    Int iTotal = i + _itemsPerPage
+    Int junkHistoryCount = JunkHistory.GetSize()
+
+    ;VerboseMessage("JunkHistory Form Count " + junkHistoryCount)
+    ;VerboseMessage("Starting Index " + i)
+    ;VerboseMessage("Total for this page " + iTotal)
+    
+    ; Should only enable the next page button if the _page is less than the _totalPages
+    If _page < _totalPages - 1
+        SetModSettingInt("iNextPageToggle:Hidden", 1)
+    Else
+        SetModSettingInt("iNextPageToggle:Hidden", 0)
+    Endif
+
+    ; Should only enable the previous page button if the _page is greater than 0
+    If _page > 0
+        SetModSettingInt("iPreviousPageToggle:Hidden", 1)
+    Else
+        SetModSettingInt("iPreviousPageToggle:Hidden", 0)
+    Endif
+
+    SetModSettingString("sPageCount:JunkList", "<font color='#9498B3'>Page " + (_page + 1) + " of " + _totalPages + "</font>")
+    SetModSettingString("sPageCount2:JunkList", "<font color='#9498B3'>Page " + (_page + 1) + " of " + _totalPages + "</font>")
+
+    ; Go through our history and update the pages itemSlots with the current items
+    While i < iTotal && i < junkHistoryCount && optionIndex < _itemsPerPage
+        Form item = JunkHistory.GetAt(i)
+
+        String name = item.GetName() as String
+        String o_ID = "sItem" + (optionIndex + 1) + ":JunkList"
+        
+        if(item.HasKeyword(IsJunkKYWD))
+            name = FormatJunkItemName(name, "junk")
+        Else
+            name = FormatJunkItemName(name, "not junk")
+        EndIf
+
+        ; Update the item slot with the formated item name
+        SetModSettingString(o_ID, name as String)
+
+        i += 1
+        optionIndex += 1
+    EndWhile
+
+    ; Clear any unused item slots @TODO - This should be handled by MCM Helpers Group Control but every slot would need its own hidden toggle
+    If optionIndex < _itemsPerPage
+        While optionIndex < _itemsPerPage
+            String o_ID = "sItem" + (optionIndex + 1) + ":JunkList"
+            SetModSettingString(o_ID, "")
+            optionIndex += 1
+        EndWhile
+    EndIf
+EndFunction
+
+; MCMJunkListPreviousPage
+; Moves the Junk List page to the previous page
+;
+; @returns  None
+Function MCMJunkListPreviousPage()
+    If _page > 0
+        _page = _page - 1
+        JunkListPageUpdate()
+        RefreshMenu()
+    EndIf 
+EndFunction
+
+; MCMJunkListNextPage
+; Moves the Junk List page to the next page
+;
+; @returns  None
+Function MCMJunkListNextPage()
+    If _page < _totalPages - 1
+        _page = _page + 1
+        JunkListPageUpdate()
+        RefreshMenu()
+    EndIf
+EndFunction
+
+; MCMToggleJunkItem
+; Toggles the junk status of an item in the Junk List
+;
+; @param index Int  the index of the item in the Junk List
+; @returns  None
+Function MCMToggleJunkItem(Int index)
+    ; o_ID is the sItem slot on the page. 
+    ; The MCMHelper config.json predefines 40 of these on the Junk List page
+    String o_ID = "sItem" + (index + 1) + ":JunkList"
+    String itemSlotText = GetModSettingString(o_ID)
+
+    ; Do nothing if the item slot is empty
+    If itemSlotText == ""
+        return
+    EndIf
+    
+    Form item = JunkHistory.GetAt(index + (_page * _itemsPerPage))
+    Bool status = JunkList.HasForm(item)
+    String name = item.GetName()
+
+    String UpdatingText = FormatJunkItemName(name, "updating")
+    SetModSettingString(o_ID, UpdatingText)
+    RefreshMenu()
+
+    If status
+        RemoveJunkKeyword(item)
+        JunkList.RemoveAddedForm(item)
+
+        name = FormatJunkItemName(name, "not junk")
+    Else
+        AddJunkKeyword(item)
+        JunkList.AddForm(item)
+
+        name = FormatJunkItemName(name, "junk")
+    EndIf
+
+    SetModSettingString(o_ID, name)
+
+    ; Prevent text flicker by waiting a second before updating the UI again
+    Utility.WaitMenuMode(0.5)
+    RefreshMenu()
+EndFunction
+
+; FormatJunkItemName
+; MCM Junk Item Name Formatting Utility
+;
+; @param name String  the name of the item
+; @param status String  Enum { "updating", "junk", "not junk" }  the status of the item
+; @returns  String  the formatted item name
+String Function FormatJunkItemName(String name, String status)
+    If status == "updating"
+        name = "<font color='#30DEDF'>[Updating]</font> <font color='#675151'>" + name + "</font>"
+    ElseIf status == "junk"
+        name = "<font color='#71C56C'>[Junk]</font> " + name
+    ElseIf status == "not junk"
+        name = "<font color='#C58975'>[Not Junk]</font> <font color='#7D7D7D'>" + name + "</font>"
+    EndIf
+
+    return name
+EndFunction
+
 ; ResetJunk
 ; Resets the junk list
 ;
@@ -474,6 +666,9 @@ Function TriggerSaveJunkListToFile()
     VerboseMessage("Junk List saved!", True)
 
     SetModSettingString("sSaveJunkListToFile:Utility", "$JunkIt_JunkSaved")
+
+    ; Prevent text flicker by waiting a second before updating the UI again
+    Utility.WaitMenuMode(0.5)
     RefreshMenu()
 EndFunction
 
@@ -520,6 +715,7 @@ Function TriggerLoadJunkListFromFile()
         ; Add form to junk list if it isn't already there
         If !JunkList.HasForm(item)
             JunkList.AddForm(item)
+            JunkHistory.AddForm(item)
         EndIf
         
         ; Ensure that any forms in the new list are removed from the unjunked list if they were previously unjunked
@@ -540,7 +736,9 @@ Function TriggerLoadJunkListFromFile()
         VerboseMessage("Junk List replaced!", True)
         SetModSettingString("sLoadJunkListFromFile:Utility", "$JunkIt_JunkReplaced")
     EndIf
-    
+
+    ; Prevent text flicker by waiting a second before updating the UI again
+    Utility.WaitMenuMode(0.5)
     RefreshMenu()
 EndFunction
 
@@ -600,7 +798,7 @@ Event OnKeyUp(Int KeyCode, Float HoldTime)
 
     If ActiveMenu != "" && !UI.IsTextInputEnabled() && KeyCode == (GamepadJunkKey.GetValue() as Int)
         GotoState("busy")
-        If HoldTime < GamepadTransferHoldTime.GetValue()
+        If HoldTime < GamepadTransferHoldTime.GetValue() - 1
             ToggleIsJunk()
         Else
             If ActiveMenu == "ContainerMenu"
@@ -689,6 +887,7 @@ Function MarkAsJunk(Form item)
     ; Update Junk FormList
     If !JunkList.HasForm(item)
         JunkList.AddForm(item)
+        JunkHistory.AddForm(item)
     EndIf
 
     ; Stop tracking this item for GameLoad keyword correction
