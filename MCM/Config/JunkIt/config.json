@@ -1114,6 +1114,32 @@
                     }
                 },
                 {
+                    "id": "bAggressiveRefresh:Utility",
+                    "type": "toggle",
+                    "text": "$JunkIt_AggressiveRefresh",
+                    "help": "$JunkIt_AggressiveRefresh_Help",
+                    "groupControl": 3,
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": false
+                    }
+                },
+                {
+                    "id": "iAggressiveRefreshMaxInterval:Utility",
+                    "type": "slider",
+                    "text": "$JunkIt_AggressiveRefreshMaxInterval",
+                    "help": "$JunkIt_AggressiveRefreshMaxInterval_Help",
+                    "groupCondition": 3,
+                    "valueOptions": {
+                        "sourceType": "ModSettingInt",
+                        "min": 1,
+                        "max": 60,
+                        "step": 1,
+                        "defaultValue": 10,
+                        "formatString": "{0} seconds"
+                    }
+                },
+                {
                     "id": "bReplaceJunkListOnLoad:Utility",
                     "type": "toggle",
                     "text": "$JunkIt_ReplaceJunkListOnLoad",
