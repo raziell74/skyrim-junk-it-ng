@@ -59,6 +59,10 @@ Int _page = 0
 Int _totalPages = 0
 Int _itemsPerPage = 40
 
+Bool bAggressiveRefresh = False
+Int iAggressiveRefreshMaxInterval = 10
+Int iAggressiveUpdateTimer = 0
+
 ; --- JunkIt.dll Native Functions ---------------------------------------------------
 
 Function RefreshDllSettings() global native
@@ -83,6 +87,10 @@ Function SaveJunkListToFile() global native
 FormList Function LoadJunkListFromFile() global native
 Function UpdateItemKeywords() global native
 
+; [Experimental]
+
+Int Function ProcessItemListTransfer(FormList a_itemList, ObjectReference a_fromContainer, ObjectReference a_toContainer, Int a_isBarter) global native
+
 ; --- MCM Helper Functions ----------------------------------------------------------
 
 ; GetVersion
@@ -105,7 +113,7 @@ Event OnVersionUpdate(int aVersion)
     ; Check if there is no JunkHistory but there are items in the JunkList or UnjunkedList
     If JunkHistory.GetSize() == 0 && (JunkList.GetSize() > 0 || UnjunkedList.GetSize() > 0)
         Utility.Wait(10.0)
-        VerboseMessage("Updating to Version 1.2.0 - Please wait for the update to complete before opening the MCM.", True)
+        Debug.Notification("Updating to Version 1.2.0 - Please wait for the update to complete before opening the MCM.")
         ; UpdateMessage.Show(1.20)
 
         ; iterate through the UnjunkedList and add the items from the junk history list
@@ -126,8 +134,8 @@ Event OnVersionUpdate(int aVersion)
             i += 1
         EndWhile
 
-        Int JunkHistoryCount = JunkHistory.GetSize() 
-        VerboseMessage("JunkIt Version 1.2.0 - Junk History now tracking " + JunkHistoryCount + " items", True)
+        Int JunkHistoryCount = JunkHistory.GetSize()
+        Debug.Notification("JunkIt Version 1.2.0 - Junk History now tracking " + JunkHistoryCount + " items")
     EndIf
 
     VerboseMessage("MCM Successfully Updated to the latest version", True)
@@ -146,10 +154,13 @@ Event OnUpdate()
         VerboseMessage("OnUpdate: Settings imported!", True)
     EndIf
 
-    If UIFrozen
-        VerboseMessage("Forced Thaw of UI")
-        UnlockItemListUI()
-        GotoState("")
+    ; Aggresive Refresh will refresh the UIIcons every 5 seconds up to the max interval
+    If bAggressiveRefresh
+        RefreshUIIcons()
+        If iAggressiveUpdateTimer < iAggressiveRefreshMaxInterval
+            iAggressiveUpdateTimer += 5
+            RegisterForSingleUpdate(5.0)
+        EndIf
     EndIf
 EndEvent
 
@@ -310,6 +321,10 @@ Event OnSettingChange(String a_ID)
         NotifyLargeInventoryLag.SetValue(GetModSettingBool(a_ID) as Float)
     ElseIf a_ID == "iWarnInventorySizeThreshold:MiscSettings"
         WarnInventorySizeThreshold = GetModSettingInt(a_ID)
+    ElseIf a_ID == "bAggressiveRefresh:Utility"
+        bAggressiveRefresh = GetModSettingBool(a_ID)
+    ElseIf a_ID == "iAggressiveRefreshMaxInterval:Utility"
+        iAggressiveRefreshMaxInterval = GetModSettingInt(a_ID)
 
     ; Export / Import Settings
     ElseIf a_ID == "bAutoLoadJunkListFromFile:Maintenance"
@@ -355,6 +370,8 @@ Function Default()
     SetModSettingBool("bNotifyLargeInventoryLag:MiscSettings", True)
     SetModSettingInt("iWarnInventorySizeThreshold:MiscSettings", 500)
     WarnInventorySizeThreshold = 500
+    SetModSettingBool("bAggressiveRefresh:Utility", False)
+    SetModSettingInt("iAggressiveRefreshMaxInterval:Utility", 10)
 
     ; Maintenance Settings
     SetModSettingBool("bEnabled:Maintenance", True)
@@ -411,6 +428,8 @@ Function Load()
     NotifyOnJunkSell.SetValue(GetModSettingBool("bNotifyOnJunkSell:MiscSettings") as Float)
     NotifyLargeInventoryLag.SetValue(GetModSettingBool("bNotifyLargeInventoryLag:MiscSettings") as Float)
     WarnInventorySizeThreshold = GetModSettingInt("iWarnInventorySizeThreshold:MiscSettings")
+    bAggressiveRefresh = GetModSettingBool("bAggressiveRefresh:Utility")
+    iAggressiveRefreshMaxInterval = GetModSettingInt("iAggressiveRefreshMaxInterval:Utility")
 
     ; Maintenance Settings
     AutoLoadJunkListFromFile.SetValue(GetModSettingBool("bAutoLoadJunkListFromFile:Maintenance") as Float)
@@ -464,6 +483,8 @@ Function MigrateToMCMHelper()
     SetModSettingBool("bNotifyOnJunkSell:MiscSettings", NotifyOnJunkSell.GetValue() as Bool)
     SetModSettingBool("bNotifyLargeInventoryLag:MiscSettings", NotifyLargeInventoryLag.GetValue() as Bool)
     SetModSettingInt("iWarnInventorySizeThreshold:MiscSettings", WarnInventorySizeThreshold)
+    SetModSettingBool("bAggressiveRefresh:Utility", bAggressiveRefresh)
+    SetModSettingInt("iAggressiveRefreshMaxInterval:Utility", iAggressiveRefreshMaxInterval)
 
     ; Maintenance Settings
     SetModSettingBool("bAutoLoadJunkListFromFile:Maintenance", AutoLoadJunkListFromFile.GetValue() as Bool)
@@ -791,11 +812,6 @@ EndEvent
 ; @param HoldTime Float  the hold time
 ; @returns  None
 Event OnKeyUp(Int KeyCode, Float HoldTime)
-    If UIFrozen
-        VerboseMessage("Forced Thaw of UI")
-        UnlockItemListUI(false)
-    EndIf
-
     If ActiveMenu != "" && !UI.IsTextInputEnabled() && KeyCode == (GamepadJunkKey.GetValue() as Int)
         GotoState("busy")
         If HoldTime < GamepadTransferHoldTime.GetValue() - 1
@@ -807,6 +823,11 @@ Event OnKeyUp(Int KeyCode, Float HoldTime)
                 SellJunk()
             EndIf
         EndIf
+
+        If bAggressiveRefresh
+            RefreshUIIcons()
+        EndIf
+
         GotoState("")
     EndIf
 EndEvent
@@ -817,9 +838,8 @@ EndEvent
 ; @param KeyCode Int  the key code
 ; @returns  None
 Event OnKeyDown(Int KeyCode)
-    If UIFrozen
-        VerboseMessage("Forced Thaw of UI")
-        UnlockItemListUI(false)
+    If bAggressiveRefresh
+        RefreshUIIcons()
     EndIf
 
     If ActiveMenu != "" && !UI.IsTextInputEnabled()
@@ -835,6 +855,11 @@ Event OnKeyDown(Int KeyCode)
                 SellJunk()
             EndIf
         EndIf
+
+        If bAggressiveRefresh
+            RefreshUIIcons()
+        EndIf
+
         GotoState("")
     EndIf
 EndEvent
@@ -925,7 +950,6 @@ EndFunction
 ; @returns  None
 Function TransferJunk()
     If JunkList.GetSize() <= 0
-        RefreshUIIcons()
         Return
     EndIf
 
@@ -950,7 +974,6 @@ Function TransferJunk()
         If transferContainer.GetItemCount(TransferList) <= 0
             VerboseMessage("No Junk to retrieve!")
             Debug.MessageBox("No Junk to take!")
-            RefreshUIIcons()
             Return
         EndIf
 
@@ -995,13 +1018,12 @@ Function TransferJunk()
         EndIf
 
         LockItemListUI()
-        While transferContainer.GetItemCount(TransferList) > 0
-            transferContainer.RemoveItem(TransferList, 100, true, PlayerREF)
-            Utility.wait(0.1)
-        EndWhile
+
+        Int iRetrievedCount = ProcessItemListTransfer(TransferList, transferContainer, PlayerREF, 0)
+        
         VerboseMessage("Junk Retrieved!")
         If NotifyOnJunkTransfer.GetValue() >= 1
-            Debug.Notification("JunkIt - Junk Retrieved!")
+            Debug.Notification("JunkIt - " + iRetrievedCount + " Junk Items Retrieved!")
         EndIf
         UnlockItemListUI()
         Return
@@ -1028,7 +1050,6 @@ Function TransferJunk()
             Int TotalPossibleTransferred = 0
 
             FormList TransferAllList = TransferList
-
             LockItemListUI()
 
             While iCurrent < iTotal
@@ -1070,21 +1091,15 @@ Function TransferJunk()
                 iCurrent += 1
             EndWhile
 
-            ; Do Bulk Transfer of items that we can transfer all of
-            If TransferAllList.GetSize() > 0
-                While PlayerREF.GetItemCount(TransferAllList) > 0
-                    PlayerREF.RemoveItem(TransferAllList, 100, true, transferContainer)
-                    Utility.wait(0.1)
-                EndWhile
-            EndIf
+            ProcessItemListTransfer(TransferAllList, PlayerREF, transferContainer, 0)
 
             If TotalTransferred == 0
                 VerboseMessage("[NPC Mode] NPC cannot carry any more junk")
                 Debug.MessageBox("This person cannot carry any more")
             ElseIf TotalTransferred >= TotalPossibleTransferred
-                VerboseMessage("[NPC Mode] Transferred All Junk to " + transferActor.GetName() + " [" + RoundNumber(currentWeight) + "/" + RoundNumber(maxWeight) + "]")
+                VerboseMessage("[NPC Mode] Transferred All " + TotalTransferred + " Junk Items to " + transferActor.GetName() + " [" + RoundNumber(currentWeight) + "/" + RoundNumber(maxWeight) + "]")
                 If NotifyOnJunkTransfer.GetValue() >= 1
-                    Debug.Notification("JunkIt - Transferred All Junk!")
+                    Debug.Notification("JunkIt - Transferred All " + TotalTransferred + " Junk Items!")
                 EndIf
             Else
                 VerboseMessage("[NPC Mode] Transferred " + TotalTransferred + " Junk Items to " + transferActor.GetName() + " [" + RoundNumber(currentWeight) + "/" + RoundNumber(maxWeight) + "]")
@@ -1096,13 +1111,11 @@ Function TransferJunk()
             UnlockItemListUI()
         Else
             LockItemListUI()
-            While PlayerREF.GetItemCount(TransferList) > 0
-                PlayerREF.RemoveItem(TransferList, 100, true, transferContainer)
-                
-                Utility.wait(0.1)
-            EndWhile
+            
+            Int iTransferredCount = ProcessItemListTransfer(TransferList, PlayerREF, transferContainer, 0)
+            
             If NotifyOnJunkTransfer.GetValue() >= 1
-                Debug.Notification("JunkIt - Transferred Junk!")
+                Debug.Notification("JunkIt - Transferred " + iTransferredCount + " Junk Items!")
             EndIf
             
             UnlockItemListUI()
@@ -1122,7 +1135,7 @@ Function SellJunk()
     If JunkList.GetSize() <= 0
         VerboseMessage("No Junk to sell!")
         Debug.MessageBox("No Junk to sell!")
-        RefreshUIIcons()
+        ; RefreshUIIcons()
         Return
     EndIf
 
@@ -1277,6 +1290,8 @@ Function SellJunk()
     UI.SetFloat("BarterMenu", "_root.Menu_mc._vendorGold", totalVendorGoldLeft)
 
     ; Transfer partial quantity item listings
+    ; *Note: Partial transfers should be done first to avoid any issues with the full quantity items
+    ;        they should also only be "maybe" one or two items at most so doing it in papyrus should be fast enough
     Int PartialIndex = 0
     VerboseMessage("SellPartialList Size: " + PartialSellItemCount)
     While PartialIndex < PartialSellItemCount
@@ -1292,14 +1307,8 @@ Function SellJunk()
         PartialIndex += 1
     EndWhile
 
-    ; Transfer all the items that we didn't have to individually sell
-    If SellAllList.GetSize() > 0
-        While PlayerREF.GetItemCount(SellAllList) > 0
-            PlayerREF.RemoveItem(SellAllList, 150, true, vendorContainer)
-            Utility.wait(0.1)
-        EndWhile
-        VerboseMessage("Transaction of full quantity item sales complete", True)
-    EndIf
+    Int iTotalFullQuantityItems = ProcessItemListTransfer(SellAllList, PlayerREF, vendorContainer, 1)
+    VerboseMessage("Transaction " + iTotalFullQuantityItems + " full quantity item sales complete", True)
 
     ; Speechcraft experience is calculated by 1 base XP per gold used in transactions.
     ; Formula: skillUseMult * (base Xp * fSpeechCraftMult) + skillUseOffset
@@ -1372,11 +1381,7 @@ EndFunction
 ;
 ; @returns  None
 Function LockItemListUI()
-    UIFrozen = True
-    FreezeItemListUI()
-
-    ; If the UI is still locked after 5 seconds, force thaw it
-    RegisterForSingleUpdate(5.0)
+    iAggressiveUpdateTimer = 0
 EndFunction
 
 ; UnlockItemListUI
@@ -1385,12 +1390,9 @@ EndFunction
 ; @param bUpdateUI Bool  whether to update the UI icons
 ; @returns  None
 Function UnlockItemListUI(bool bUpdateUI = true)
-    UIFrozen = False
-    ThawItemListUI()
-
-    If bUpdateUI
-        Utility.wait(0.5)
+    If bAggressiveRefresh
         RefreshUIIcons()
+        RegisterForSingleUpdate(5.0)
     EndIf
 EndFunction
 
