@@ -90,6 +90,8 @@ Function UpdateItemKeywords() global native
 ; [Experimental]
 
 Int Function ProcessItemListTransfer(FormList a_itemList, ObjectReference a_fromContainer, ObjectReference a_toContainer, Int a_isBarter) global native
+Int Function GetContainerItemListCount(ObjectReference a_container, FormList a_itemList) global native
+Int Function GetContainerSingleItemCount(ObjectReference a_container, Form a_item) global native
 
 ; --- MCM Helper Functions ----------------------------------------------------------
 
@@ -889,11 +891,14 @@ EndState
 ; @returns  None
 Function ToggleIsJunk()
     Form item = ToggleSelectedAsJunk()
+    If !item
+        return
+    EndIF
 
     ; Process the Results
-    If item && item.HasKeyword(IsJunkKYWD)
+    If item.HasKeyword(IsJunkKYWD)
         MarkAsJunk(item)
-    ElseIf item
+    Else
         UnmarkAsJunk(item)
     EndIf
 EndFunction
@@ -971,7 +976,8 @@ Function TransferJunk()
 
     if menuView == 0 ; VIEWING CONTAINER
         ; Retrieve from container
-        If transferContainer.GetItemCount(TransferList) <= 0
+        ; If transferContainer.GetItemCount(TransferList) <= 0
+        If GetContainerItemListCount(transferContainer, TransferList) <= 0
             VerboseMessage("No Junk to retrieve!")
             Debug.MessageBox("No Junk to take!")
             Return
@@ -990,7 +996,8 @@ Function TransferJunk()
         EndIf
     Else  ; VIEWING PLAYER INVENTORY
         ; Transfer to container
-        If PlayerREF.GetItemCount(TransferList) <= 0
+        ; If PlayerREF.GetItemCount(TransferList) <= 0
+        If GetContainerItemListCount(PlayerREF, TransferList) <= 0
             VerboseMessage("No Junk to transfer!")
             Debug.MessageBox("No Junk to transfer!")
             Return
@@ -1054,7 +1061,7 @@ Function TransferJunk()
 
             While iCurrent < iTotal
                 Form item = TransferList.GetAt(iCurrent)	
-    		    Int iCount = PlayerREF.GetItemCount(item)
+    		    Int iCount = GetContainerSingleItemCount(PlayerREF, item) ; PlayerREF.GetItemCount(item)
                 Int iTotalCount = iCount
                 TotalPossibleTransferred += iCount
     		
@@ -1145,8 +1152,12 @@ Function SellJunk()
     ; and limited to only items in this barter session
     FormList SellList = GetSellFormList()
 
+    VerboseMessage("SellList generated from ItemList. SellList Form Count " + SellList.GetSize())
+    VerboseMessage("Player has " + GetContainerItemListCount(PlayerREF, SellList) + " junk items to sell!")
+
     ; Check if the players inventory has any junk to sell
-    If PlayerREF.GetItemCount(SellList) <= 0
+    ; If PlayerREF.GetItemCount(SellList) <= 0
+    If GetContainerItemListCount(PlayerREF, SellList) <= 0
         VerboseMessage("No Junk to sell!")
         Debug.MessageBox("No Junk to sell!")
         Return
@@ -1194,9 +1205,11 @@ Function SellJunk()
     
     While iCurrent < iTotal
         Form item = SellList.GetAt(iCurrent)	
-        Int iCount = PlayerREF.GetItemCount(item)
+        Int iCount = GetContainerSingleItemCount(PlayerREF, item) ; PlayerREF.GetItemCount(item)
         Int iTotalCount = iCount
         TotalPossibleToSell += iCount
+
+        VerboseMessage("Calculating Sell Item: " + item.GetName() + " -- player has " + iCount + " of this item")
 
         ; Calculate how many junk items we can sell based on the vendors gold
         If iCount > 0
@@ -1231,6 +1244,7 @@ Function SellJunk()
                 TotalToSell += iCount
             ElseIf iCount <= 0
                 ; We cannot sell any of this item so remove it from the bulk sell list
+                VerboseMessage("Cannot sell any of this item, removing from bulk sale list")
                 SellAllList.RemoveAddedForm(item)
             Else
                 ; We can sell the full quanity of this item
@@ -1273,13 +1287,35 @@ Function SellJunk()
     Int goldToGimme = RoundNumber(totalSellValue)
     Int vendorActorGold = vendorActor.GetItemCount(Gold001)
     If vendorActorGold > 0
-        vendorActor.RemoveItem(Gold001, goldToGimme, false, PlayerREF)
+        Int onHandGoldToGimme = goldToGimme
+        If vendorActorGold < goldToGimme
+            onHandGoldToGimme = vendorActorGold
+        EndIf
+
+        VerboseMessage("Vendor has " + vendorActorGold + " gold on hand. Taking " + onHandGoldToGimme + " gold from vendor...")
+        vendorActor.RemoveItem(Gold001, onHandGoldToGimme, false, PlayerREF)
         goldToGimme -= vendorActorGold
     Endif
 
     ; If the vendors on hand gold was not enough, take the rest from the container
     If goldToGimme > 0
-        vendorContainer.RemoveItem(Gold001, goldToGimme, false, PlayerREF)
+        Int containerGold = vendorContainer.GetItemCount(Gold001)
+        If containerGold > 0
+            Int containerGoldToGimme = goldToGimme
+            If containerGold < goldToGimme
+                containerGoldToGimme = containerGold
+            EndIf
+
+            VerboseMessage("Vendor Container has " + containerGold + " gold. Taking " + containerGoldToGimme + " gold from vendor container...")
+            vendorContainer.RemoveItem(Gold001, containerGoldToGimme, false, PlayerREF)
+            goldToGimme -= containerGold
+        EndIf
+
+        ; This case actually should never happen, but just in case shit gets wild pay the player what is owed
+        If goldToGimme > 0
+            VerboseMessage("Vendor ran out of money! Gold owed to player " + goldToGimme)
+            PlayerREF.AddItem(Gold001, goldToGimme, false)
+        EndIf
     EndIf
 
     ; Update UI with the new vendor gold total, the itemlist update can not be trusted
@@ -1307,6 +1343,7 @@ Function SellJunk()
         PartialIndex += 1
     EndWhile
 
+    VerboseMessage("ProcessItemListTransfer(SellAllList) - SellAllList.Size: " + SellAllList.GetSize())
     Int iTotalFullQuantityItems = ProcessItemListTransfer(SellAllList, PlayerREF, vendorContainer, 1)
     VerboseMessage("Transaction " + iTotalFullQuantityItems + " full quantity item sales complete", True)
 
