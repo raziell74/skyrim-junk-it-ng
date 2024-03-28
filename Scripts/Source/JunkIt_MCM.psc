@@ -976,7 +976,6 @@ Function TransferJunk()
 
     if menuView == 0 ; VIEWING CONTAINER
         ; Retrieve from container
-        ; If transferContainer.GetItemCount(TransferList) <= 0
         If GetContainerItemListCount(transferContainer, TransferList) <= 0
             VerboseMessage("No Junk to retrieve!")
             Debug.MessageBox("No Junk to take!")
@@ -996,7 +995,6 @@ Function TransferJunk()
         EndIf
     Else  ; VIEWING PLAYER INVENTORY
         ; Transfer to container
-        ; If PlayerREF.GetItemCount(TransferList) <= 0
         If GetContainerItemListCount(PlayerREF, TransferList) <= 0
             VerboseMessage("No Junk to transfer!")
             Debug.MessageBox("No Junk to transfer!")
@@ -1156,7 +1154,6 @@ Function SellJunk()
     VerboseMessage("Player has " + GetContainerItemListCount(PlayerREF, SellList) + " junk items to sell!")
 
     ; Check if the players inventory has any junk to sell
-    ; If PlayerREF.GetItemCount(SellList) <= 0
     If GetContainerItemListCount(PlayerREF, SellList) <= 0
         VerboseMessage("No Junk to sell!")
         Debug.MessageBox("No Junk to sell!")
@@ -1449,7 +1446,6 @@ Bool Function WarnLargeInventory(ObjectReference a_container1, ObjectReference a
         VerboseMessage("Large Container Inventory Detected!")
         If NotifyLargeInventoryLag.GetValue() >= 1
             Debug.MessageBox("Large Inventory detected, transfer could lag. Please allow for a few additional seconds for the transfer to complete.")
-            Utility.wait(1.0)
         EndIf
         Return True
     EndIf
