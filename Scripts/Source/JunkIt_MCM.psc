@@ -70,8 +70,6 @@ Function RefreshDllSettings() global native
 Form Function ToggleSelectedAsJunk() global native
 Int Function AddJunkKeyword(Form a_form) global native
 Int Function RemoveJunkKeyword(Form a_form) global native
-Function FreezeItemListUI() global native
-Function ThawItemListUI() global native
 Function RefreshUIIcons() global native
 
 Int Function GetContainerMode() global native
@@ -995,7 +993,7 @@ Function TransferJunk()
         EndIf
     Else  ; VIEWING PLAYER INVENTORY
         ; Transfer to container
-        If GetContainerItemListCount(PlayerREF, TransferList) <= 0
+        If GetContainerItemListCount(PlayerRef, TransferList) <= 0
             VerboseMessage("No Junk to transfer!")
             Debug.MessageBox("No Junk to transfer!")
             Return
@@ -1016,7 +1014,7 @@ Function TransferJunk()
 
     If canRetrieve == TRUE
         ; Check for large inventories and warn that they could take longer to process
-        WarnLargeInventory(PlayerREF, transferContainer)
+        WarnLargeInventory(PlayerRef, transferContainer)
 
         If NotifyOnJunkTransfer.GetValue() >= 1
             Debug.Notification("JunkIt - Processing Retrieval...")
@@ -1024,7 +1022,7 @@ Function TransferJunk()
 
         LockItemListUI()
 
-        Int iRetrievedCount = ProcessItemListTransfer(TransferList, transferContainer, PlayerREF, 0)
+        Int iRetrievedCount = ProcessItemListTransfer(TransferList, transferContainer, PlayerRef, 0)
         
         VerboseMessage("Junk Retrieved!")
         If NotifyOnJunkTransfer.GetValue() >= 1
@@ -1036,7 +1034,7 @@ Function TransferJunk()
 
     If canTransfer == TRUE
         ; Check for large inventories and warn that they could take longer to process
-        WarnLargeInventory(PlayerREF, transferContainer)
+        WarnLargeInventory(PlayerRef, transferContainer)
 
         If NotifyOnJunkTransfer.GetValue() >= 1
             Debug.Notification("JunkIt - Processing Transfer...")
@@ -1058,11 +1056,16 @@ Function TransferJunk()
             LockItemListUI()
 
             While iCurrent < iTotal
-                Form item = TransferList.GetAt(iCurrent)	
-    		    Int iCount = GetContainerSingleItemCount(PlayerREF, item) ; PlayerREF.GetItemCount(item)
-                Int iTotalCount = iCount
-                TotalPossibleTransferred += iCount
-    		
+                Form item = TransferList.GetAt(iCurrent)
+                Int iCount = 0
+                Int iTotalCount = 0
+
+                if item
+                    iCount = GetContainerSingleItemCount(PlayerRef, item)
+                    iTotalCount = iCount
+                    TotalPossibleTransferred += iCount
+                EndIf
+
                 If iCount > 0
                     Float itemWeight = item.GetWeight()
                     Float currentWeightWithItems = (itemWeight * iCount) + currentWeight
@@ -1074,7 +1077,7 @@ Function TransferJunk()
 
                     If iCount > 0 && iCount < iTotalCount
                         ; Transfer only a limited quantity of this item
-                        PlayerREF.RemoveItem(item, iCount, true, transferContainer)
+                        PlayerRef.RemoveItem(item, iCount, true, transferContainer)
                         currentWeight += (itemWeight * iCount)
                         TotalTransferred += iCount
 
@@ -1096,7 +1099,7 @@ Function TransferJunk()
                 iCurrent += 1
             EndWhile
 
-            ProcessItemListTransfer(TransferAllList, PlayerREF, transferContainer, 0)
+            ProcessItemListTransfer(TransferAllList, PlayerRef, transferContainer, 0)
 
             If TotalTransferred == 0
                 VerboseMessage("[NPC Mode] NPC cannot carry any more junk")
@@ -1117,7 +1120,7 @@ Function TransferJunk()
         Else
             LockItemListUI()
             
-            Int iTransferredCount = ProcessItemListTransfer(TransferList, PlayerREF, transferContainer, 0)
+            Int iTransferredCount = ProcessItemListTransfer(TransferList, PlayerRef, transferContainer, 0)
             
             If NotifyOnJunkTransfer.GetValue() >= 1
                 Debug.Notification("JunkIt - Transferred " + iTransferredCount + " Junk Items!")
@@ -1149,12 +1152,13 @@ Function SellJunk()
     ; sorted by priority, equip and favorite filtered, 
     ; and limited to only items in this barter session
     FormList SellList = GetSellFormList()
+    Int PlayerItemListCount = GetContainerItemListCount(PlayerRef, SellList)
 
     VerboseMessage("SellList generated from ItemList. SellList Form Count " + SellList.GetSize())
-    VerboseMessage("Player has " + GetContainerItemListCount(PlayerREF, SellList) + " junk items to sell!")
+    VerboseMessage("Player has " + PlayerItemListCount + " junk items in the SellList to sell!")
 
     ; Check if the players inventory has any junk to sell
-    If GetContainerItemListCount(PlayerREF, SellList) <= 0
+    If PlayerItemListCount <= 0
         VerboseMessage("No Junk to sell!")
         Debug.MessageBox("No Junk to sell!")
         Return
@@ -1164,8 +1168,13 @@ Function SellJunk()
     Actor vendorActor = GetBarterMenuContainer() as Actor
     ObjectReference vendorContainer = GetBarterMenuMerchantContainer()
 
+    If !vendorActor || vendorActor == PlayerRef
+        VerboseMessage("SKSE Failed to get a valid vendor actor. Exiting Bulk Sale process.")
+        Debug.MessageBox("JunkIt encountered an error attemping to sell items. Please report this on the JunkIt mod page along with the version of the game you are using.")
+    EndIf
+
     If !vendorContainer
-        VerboseMessage("Vendor Container not found!")
+        VerboseMessage("Vendor Container not found, using Vendor Actor as Container.")
         vendorContainer = vendorActor as ObjectReference
     EndIf
 
@@ -1201,10 +1210,15 @@ Function SellJunk()
     VerboseMessage("Sell List Size: " + SellList.GetSize())
     
     While iCurrent < iTotal
-        Form item = SellList.GetAt(iCurrent)	
-        Int iCount = GetContainerSingleItemCount(PlayerREF, item) ; PlayerREF.GetItemCount(item)
-        Int iTotalCount = iCount
-        TotalPossibleToSell += iCount
+        Form item = SellList.GetAt(iCurrent)
+        Int iCount = 0
+        Int iTotalCount = 0
+
+        if item
+            iCount = GetContainerSingleItemCount(PlayerRef, item)
+            iTotalCount = iCount
+            TotalPossibleToSell += iCount
+        EndIf
 
         VerboseMessage("Calculating Sell Item: " + item.GetName() + " -- player has " + iCount + " of this item")
 
@@ -1266,7 +1280,7 @@ Function SellJunk()
 
     ; Confirm the sale
     If ConfirmSell.GetValue() >= 1
-        Int iConfChoice = SellConfirmationMsg.Show(RoundNumber(totalSellValue))
+        Int iConfChoice = SellConfirmationMsg.Show(TotalToSell, RoundNumber(totalSellValue))
         If(iConfChoice == 1) ;No
             UnlockItemListUI()
             Return
@@ -1274,7 +1288,7 @@ Function SellJunk()
     EndIf
 
     ; Check for large inventories and warn that they could take longer to process
-    WarnLargeInventory(PlayerREF, vendorContainer)
+    WarnLargeInventory(PlayerRef, vendorContainer)
 
     If NotifyOnJunkSell.GetValue() >= 1
         Debug.Notification("JunkIt - Processing Sale...")
@@ -1290,7 +1304,7 @@ Function SellJunk()
         EndIf
 
         VerboseMessage("Vendor has " + vendorActorGold + " gold on hand. Taking " + onHandGoldToGimme + " gold from vendor...")
-        vendorActor.RemoveItem(Gold001, onHandGoldToGimme, false, PlayerREF)
+        vendorActor.RemoveItem(Gold001, onHandGoldToGimme, false, PlayerRef)
         goldToGimme -= vendorActorGold
     Endif
 
@@ -1304,14 +1318,14 @@ Function SellJunk()
             EndIf
 
             VerboseMessage("Vendor Container has " + containerGold + " gold. Taking " + containerGoldToGimme + " gold from vendor container...")
-            vendorContainer.RemoveItem(Gold001, containerGoldToGimme, false, PlayerREF)
+            vendorContainer.RemoveItem(Gold001, containerGoldToGimme, false, PlayerRef)
             goldToGimme -= containerGold
         EndIf
 
         ; This case actually should never happen, but just in case shit gets wild pay the player what is owed
         If goldToGimme > 0
             VerboseMessage("Vendor ran out of money! Gold owed to player " + goldToGimme)
-            PlayerREF.AddItem(Gold001, goldToGimme, false)
+            PlayerRef.AddItem(Gold001, goldToGimme, false)
         EndIf
     EndIf
 
@@ -1334,14 +1348,14 @@ Function SellJunk()
         ; Double check item sale count
         If iCount > 0
             ; Do the item exchange
-            PlayerREF.RemoveItem(item, iCount, true, vendorContainer)
+            PlayerRef.RemoveItem(item, iCount, true, vendorContainer)
             VerboseMessage("Transaction for partial quantity listing " + iCount + " " + item.GetName() + " at index " + PartialIndex + " complete")
         EndIf
         PartialIndex += 1
     EndWhile
 
     VerboseMessage("ProcessItemListTransfer(SellAllList) - SellAllList.Size: " + SellAllList.GetSize())
-    Int iTotalFullQuantityItems = ProcessItemListTransfer(SellAllList, PlayerREF, vendorContainer, 1)
+    Int iTotalFullQuantityItems = ProcessItemListTransfer(SellAllList, PlayerRef, vendorContainer, 1)
     VerboseMessage("Transaction " + iTotalFullQuantityItems + " full quantity item sales complete", True)
 
     ; Speechcraft experience is calculated by 1 base XP per gold used in transactions.
