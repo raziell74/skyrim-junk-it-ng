@@ -198,27 +198,68 @@
                     }
                 },
                 {
-                    "id": "bNotifyLargeInventoryLag:MiscSettings",
+                    "id": "fHeavyLoadDelayMultiplier:MiscSettings",
+                    "type": "slider",
+                    "text": "$JunkIt_HeavyLoadDelayMultiplier",
+                    "help": "$JunkIt_HeavyLoadDelayMultiplier_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingFloat",
+                        "min": 0.5,
+                        "max": 5.0,
+                        "step": 0.1,
+                        "defaultValue": 1.0,
+                        "formatString": "{1}x"
+                    }
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_I4IntegrationHeader"
+                },
+                {
+                    "id": "bUpdateSubTypeDisplay:IntegrationSettings",
                     "type": "toggle",
-                    "text": "$JunkIt_NotifyLargeInventoryLag",
-                    "help": "$JunkIt_NotifyLargeInventoryLag_Help",
+                    "text": "$JunkIt_UpdateSubTypeDisplay",
+                    "help": "$JunkIt_UpdateSubTypeDisplay_Help",
                     "valueOptions": {
                         "sourceType": "ModSettingBool",
                         "defaultValue": true
                     }
                 },
                 {
-                    "id": "iWarnInventorySizeThreshold:MiscSettings",
-                    "type": "slider",
-                    "text": "$JunkIt_WarnInventorySizeThreshold",
-                    "help": "$JunkIt_WarnInventorySizeThreshold_Help",
+                    "id": "bUpdateItemIcon:IntegrationSettings",
+                    "type": "toggle",
+                    "text": "$JunkIt_UpdateItemIcon",
+                    "help": "$JunkIt_UpdateItemIcon_Help",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": true
+                    }
+                },
+                {
+                    "type": "header",
+                    "text": "$JunkIt_DIIIIntegrationHeader"
+                },
+                {
+                    "id": "iDIIIInstalledToggle:Hidden",
+                    "type": "hiddenToggle",
+                    "text": "Hidden toggle for DIII installed status",
+                    "groupControl": 5,
                     "valueOptions": {
                         "sourceType": "ModSettingInt",
-                        "min": 100,
-                        "max": 1000,
-                        "step": 25,
-                        "defaultValue": 500,
-                        "formatString": "{0} Items"
+                        "defaultValue": 0
+                    }
+                },
+                {
+                    "id": "bUseDynamicInventoryIcon:IntegrationSettings",
+                    "type": "toggle",
+                    "text": "$JunkIt_UseDynamicInventoryIcon",
+                    "help": "$JunkIt_UseDynamicInventoryIcon_Help",
+                    "groupControl": 4,
+                    "groupCondition": 5,
+                    "groupBehavior": "disable",
+                    "valueOptions": {
+                        "sourceType": "ModSettingBool",
+                        "defaultValue": true
                     }
                 }
             ]
@@ -1057,8 +1098,8 @@
                 {
                     "id": "bLoadSettingsonReload:Maintenance",
                     "type": "toggle",
-                    "text": "$LoadSettingsonReload",
-                    "help": "$LoadSettingsonReloadMaintenance_Help",
+                    "text": "$LoadSettingsOnReload",
+                    "help": "$LoadSettingsOnReloadMaintenance_Help",
                     "valueOptions": {
                         "sourceType": "ModSettingBool",
                         "defaultValue": false
